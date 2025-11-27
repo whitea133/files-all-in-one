@@ -1,7 +1,10 @@
+<script setup lang="ts">
+import { Button } from '@/components/ui/button'
+
+</script>
+
 <template>
-  <div class="about">
-    <h1>This is an about page</h1>
-  </div>
+  <h1>这里是关于界面</h1>
 </template>
 
 <style>
