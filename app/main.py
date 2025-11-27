@@ -7,6 +7,7 @@ import webview
 from loguru import logger
 
 from app import app
+from desktop.topMenu import topMenu
 
 
 DEFAULT_TITLE = "AmberDay"
@@ -45,7 +46,7 @@ class Client:
         logger.info("Webview will load frontend [{}] from {}", self.mode, self.frontend_url)
 
         webview.create_window(DEFAULT_TITLE, url=self.frontend_url, maximized=True, resizable=True)
-        webview.start()
+        webview.start(menu=topMenu)
 
 
 if __name__ == "__main__":
