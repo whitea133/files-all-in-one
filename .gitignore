@@ -1,0 +1,26 @@
+# git
+.git/
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv/
+
+# App-specific ignores
+app/__pycache__/
+app/*.py[oc]
+app/build/
+app/dist/
+app/wheels/
+app/*.egg-info
+app/.venv/
+
+# Web-specific ignores
+web/node_modules/
+webdist/
