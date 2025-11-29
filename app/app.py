@@ -1,3 +1,7 @@
+"""
+fastAPI 应用主模块
+"""
+
 # 导入必要的模块
 from importlib import import_module  # 动态导入模块
 from pathlib import Path  # 操作文件路径
@@ -6,11 +10,21 @@ from pkgutil import iter_modules  # 遍历包中的模块
 from fastapi import FastAPI, APIRouter  # 创建FastAPI应用和API路由
 from fastapi.staticfiles import StaticFiles  # 提供静态文件服务
 from fastapi.responses import FileResponse
+from tortoise.contrib.fastapi import register_tortoise  # 集成Tortoise ORM
+from DBsettings import TORTOISE_ORM  # 数据库配置
 from loguru import logger  # 记录日志
 import os
 
 # 创建FastAPI应用实例
 app = FastAPI()
+
+# 配置Tortoise ORM，使用Sqlite数据库
+register_tortoise(
+    app,
+    config=TORTOISE_ORM,
+    # generate_schemas=True,  # 启动时自动生成数据库表结构。只在开发环境使用，生产环境请使用迁移工具
+    add_exception_handlers=True,  # 添加异常处理器。只在开发环境使用。
+)
 
 # 挂载静态文件目录，使得可以通过/static/访问静态资源
 static_file_abspath = os.path.join(os.path.dirname(__file__), "static")

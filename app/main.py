@@ -1,3 +1,7 @@
+"""
+桌面应用程序入口
+"""
+
 import argparse
 import threading
 from typing import Optional
