@@ -8,6 +8,7 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'toggle', tagId: string): void
+  (e: 'context', payload: { id: string; x: number; y: number }): void
 }>()
 </script>
 
@@ -28,6 +29,7 @@ const emit = defineEmits<{
           :class="selectedTagIds.includes(tag.id) ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'"
           type="button"
           @click="emit('toggle', tag.id)"
+          @contextmenu.prevent="emit('context', { id: tag.id, x: $event.clientX, y: $event.clientY })"
         >
           <span class="inline-block h-2 w-2 rounded-full" :class="tag.color ?? 'bg-emerald-400'"></span>
           <span class="truncate">{{ tag.name }}</span>

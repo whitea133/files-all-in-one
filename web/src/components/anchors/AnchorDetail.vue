@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import type { AnchorItem } from '@/types/ui'
 
-defineProps<{
+const props = defineProps<{
   anchor: AnchorItem | null
+}>()
+
+const emit = defineEmits<{
+  (e: 'untag', tag: string): void
 }>()
 </script>
 
@@ -32,9 +36,16 @@ defineProps<{
           <span
             v-for="tag in anchor.tags"
             :key="tag"
-            class="rounded-full bg-blue-50 px-3 py-1 text-xs text-blue-700"
+            class="flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs text-blue-700"
           >
-            {{ tag }}
+            <span class="truncate">{{ tag }}</span>
+            <button
+              class="text-slate-400 hover:text-red-500"
+              type="button"
+              @click.stop="emit('untag', tag)"
+            >
+              ×
+            </button>
           </span>
           <span v-if="!anchor.tags.length" class="text-xs text-slate-400">暂无标签</span>
         </div>

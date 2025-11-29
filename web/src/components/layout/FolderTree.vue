@@ -7,6 +7,7 @@ import recycleIcon from '@/components/icons/recycle_icon.svg'
 const props = defineProps<{
   folders: VirtualFolder[]
   selectedId: string | null
+  editingId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -14,6 +15,8 @@ const emit = defineEmits<{
   (e: 'create'): void
   (e: 'rename', folderId: string): void
   (e: 'delete', folderId: string): void
+  (e: 'rename-commit', payload: { id: string; name: string }): void
+  (e: 'rename-cancel'): void
 }>()
 
 const keyword = ref('')
@@ -109,7 +112,16 @@ onUnmounted(() => {
           :src="folder.icon === 'recycle' ? recycleIcon : folderIcon"
           alt=""
         />
-        <span class="flex-1 truncate">{{ folder.name }}</span>
+        <span v-if="props.editingId !== folder.id" class="flex-1 truncate">{{ folder.name }}</span>
+        <input
+          v-else
+          class="flex-1 truncate rounded border border-blue-300 px-2 py-1 text-sm outline-none"
+          :value="folder.name"
+          autofocus
+          @keydown.enter.stop.prevent="emit('rename-commit', { id: folder.id, name: ($event.target as HTMLInputElement).value })"
+          @blur="emit('rename-commit', { id: folder.id, name: ($event.target as HTMLInputElement).value })"
+          @keydown.esc.stop.prevent="emit('rename-cancel')"
+        />
       </button>
     </div>
 

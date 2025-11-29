@@ -7,12 +7,16 @@ const props = defineProps<{
   selectedId: string | null
   /** 行高控制，默认 32px，可传 number(单位px) 或字符串(如 '30px') */
   rowHeight?: number | string
+  editingId?: string | null
 }>()
 
 const emit = defineEmits<{
   (e: 'select', anchorId: string): void
   (e: 'create'): void
   (e: 'delete'): void
+  (e: 'context', payload: { id: string; x: number; y: number }): void
+  (e: 'rename-commit', payload: { id: string; title: string }): void
+  (e: 'rename-cancel'): void
 }>()
 
 const rowHeightStyle = computed(() => {
@@ -50,11 +54,24 @@ const rowHeightStyle = computed(() => {
             :class="anchor.id === selectedId ? 'bg-blue-50' : 'hover:bg-slate-50'"
             :style="{ height: rowHeightStyle, minHeight: rowHeightStyle }"
             @click="emit('select', anchor.id)"
+            @contextmenu.prevent="emit('context', { id: anchor.id, x: $event.clientX, y: $event.clientY })"
           >
             <td class="max-w-[320px] px-3 py-0 align-middle">
-              <div class="truncate whitespace-nowrap text-sm font-medium text-slate-800">
+              <div
+                v-if="props.editingId !== anchor.id"
+                class="truncate whitespace-nowrap text-sm font-medium text-slate-800"
+              >
                 {{ anchor.title }}
               </div>
+              <input
+                v-else
+                class="w-full truncate rounded border border-blue-300 px-2 py-1 text-sm outline-none"
+                :value="anchor.title"
+                autofocus
+                @keydown.enter.stop.prevent="emit('rename-commit', { id: anchor.id, title: ($event.target as HTMLInputElement).value })"
+                @blur="emit('rename-commit', { id: anchor.id, title: ($event.target as HTMLInputElement).value })"
+                @keydown.esc.stop.prevent="emit('rename-cancel')"
+              />
             </td>
             <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-700 align-middle">
               {{ anchor.creator }}
