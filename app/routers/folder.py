@@ -1,10 +1,11 @@
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from tortoise.exceptions import IntegrityError
 
-from models import VirtualFolder
+from models import FileAnchor, VirtualFolder
+from routers.anchor import AnchorResponse
 
 
 router = APIRouter(prefix="/folders", tags=["virtual-folders"])
@@ -37,9 +38,14 @@ class VirtualFolderResponse(BaseModel):
 
 
 @router.get("/", response_model=list[VirtualFolderResponse])
-async def list_virtual_folders() -> list[VirtualFolderResponse]:
-    """列出全部虚拟文件夹。"""
-    folders = await VirtualFolder.all().order_by("id")
+async def list_virtual_folders(keyword: str | None = Query(default=None, min_length=1, max_length=255)) -> list[VirtualFolderResponse]:
+    """
+    列出虚拟文件夹，可按名称模糊查询。
+    """
+    qs = VirtualFolder.all()
+    if keyword:
+        qs = qs.filter(name__icontains=keyword)
+    folders = await qs.order_by("id")
     return [VirtualFolderResponse.model_validate(f) for f in folders]
 
 
@@ -101,3 +107,35 @@ async def delete_virtual_folder(folder_id: int) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="系统虚拟文件夹不可删除")
 
     await folder.delete()
+
+# -----------虚拟文件夹与资料锚点相关操作-----------
+@router.get("/{folder_id}/anchors", response_model=list[AnchorResponse])
+async def list_folder_anchors(folder_id: int) -> list[AnchorResponse]:
+    """
+    列出指定虚拟文件夹下的所有资料锚点。
+    """
+    folder = await VirtualFolder.filter(id=folder_id).first()
+    if not folder:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="虚拟文件夹不存在")
+
+    anchors = await FileAnchor.filter(virtual_folders__id=folder_id).distinct()
+
+    results: list[AnchorResponse] = []
+    for anchor in anchors:
+        folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
+        tag_ids = await anchor.tags.all().values_list("id", flat=True)
+        results.append(
+            AnchorResponse(
+                id=anchor.id,
+                name=anchor.name,
+                path=anchor.path,
+                description=anchor.description,
+                is_valid=anchor.is_valid,
+                create_time=anchor.create_time,
+                update_time=anchor.update_time,
+                virtual_folder_ids=list(folder_ids),
+                tag_ids=list(tag_ids),
+            )
+        )
+
+    return results
