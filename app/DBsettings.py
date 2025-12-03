@@ -8,7 +8,7 @@ TORTOISE_ORM = {
     },
     "apps": {
         "models": {
-            "models": ["models", "aerich.models"],          # 你的模型所在包（可 list 多个）,aerich.models 用于迁移
+            "models": ["models"],          # 你的模型所在包（可 list 多个）,aerich.models 用于迁移
             "default_connection": "default",
         }
     },

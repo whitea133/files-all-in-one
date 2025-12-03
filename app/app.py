@@ -3,6 +3,7 @@ fastAPI 应用主模块
 """
 
 # 导入必要的模块
+from contextlib import asynccontextmanager
 from importlib import import_module  # 动态导入模块
 from pathlib import Path  # 操作文件路径
 from pkgutil import iter_modules  # 遍历包中的模块
@@ -15,14 +16,43 @@ from DBsettings import TORTOISE_ORM  # 数据库配置
 from loguru import logger  # 记录日志
 import os
 
-# 创建FastAPI应用实例
-app = FastAPI()
+
+async def ensure_system_virtual_folders() -> None:
+    """
+    确保系统默认虚拟文件夹存在（首次启动自动创建）。
+    """
+    from models import VirtualFolder  # 延迟导入，避免循环
+
+    defaults = [
+        {"name": "全部资料", "description": "系统默认文件夹"},
+        {"name": "回收站", "description": "系统默认文件夹"},
+    ]
+
+    for item in defaults:
+        folder, _ = await VirtualFolder.get_or_create(
+            name=item["name"],
+            defaults={"description": item["description"], "is_system": True},
+        )
+        if not folder.is_system:
+            folder.is_system = True
+            await folder.save()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """使用 lifespan 取代已弃用的 startup 事件。"""
+    await ensure_system_virtual_folders()
+    yield
+
+
+# 创建FastAPI应用实例（使用 lifespan）
+app = FastAPI(lifespan=lifespan)
 
 # 配置Tortoise ORM，使用Sqlite数据库
 register_tortoise(
     app,
     config=TORTOISE_ORM,
-    # generate_schemas=True,  # 启动时自动生成数据库表结构。只在开发环境使用，生产环境请使用迁移工具
+    generate_schemas=True,  # 启动时自动生成数据库表结构。只在开发环境使用，生产环境请使用迁移工具
     add_exception_handlers=True,  # 添加异常处理器。只在开发环境使用。
 )
 

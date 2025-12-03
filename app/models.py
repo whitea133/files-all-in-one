@@ -13,11 +13,13 @@ class VirtualFolder(Model):
         name: 虚拟文件夹名称
         description: 虚拟文件夹描述
         create_time: 创建时间
+        is_system: 是否系统默认，系统默认不允许删除
     """    
     id = fields.IntField(pk=True)
     name = fields.CharField(max_length=255, unique=True)
     description = fields.TextField(null=True)
     create_time = fields.DatetimeField(auto_now_add=True)
+    is_system = fields.BooleanField(default=False)
 
     def __str__(self):
         return self.name
