@@ -13,7 +13,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex flex-col border-t border-slate-200 bg-white">
+  <div class="flex flex-col border-t border-slate-200 bg-[#f2f2f2]">
     <div class="flex items-center justify-between px-4 py-2">
       <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
         标签

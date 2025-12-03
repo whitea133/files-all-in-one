@@ -94,21 +94,22 @@ onUnmounted(() => {
         v-model="keyword"
         type="text"
         placeholder="搜索虚拟文件夹"
-        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
       />
     </div>
-    <div class="mt-2 flex-1 overflow-y-auto rounded-md border border-slate-200">
+    <div class="mt-2 flex-1 overflow-y-auto rounded-md border border-slate-300">
       <button
         v-for="folder in visibleFolders"
         :key="folder.id"
-        class="group flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition"
-        :class="folder.id === selectedId ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50'"
+        class="group flex w-full items-center gap-3 px-3 py-2 text-left text-[13px] leading-5 transition rounded-md min-h-[36px]"
+        :class="folder.id === selectedId ? 'bg-[#4072E5] text-white' : 'text-slate-700 hover:bg-slate-50'"
         type="button"
         @click="emit('select', folder.id)"
         @contextmenu.prevent="openContextMenu($event, folder.id)"
       >
         <img
           class="h-4 w-4 shrink-0"
+          :class="folder.id === selectedId ? 'brightness-0 invert' : ''"
           :src="folder.icon === 'recycle' ? recycleIcon : folderIcon"
           alt=""
         />

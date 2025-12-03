@@ -22,10 +22,10 @@ const anchors = ref<AnchorItem[]>([
     id: 'a1',
     title: 'DiffStega: Training-Free Covert Image Steganography',
     creator: 'Yang 等',
+    type: 'PDF',
     folderId: 'security',
     addedAt: '2025/09/26 14:20:42',
     updatedAt: '2025/09/26 14:21:25',
-    citationCount: 3,
     tags: ['隐写', 'Diffusion', '安全'],
     summary: '介绍一种基于扩散模型的无载体隐写方法，提升安全性与多样性。',
     attachments: 1,
@@ -34,22 +34,22 @@ const anchors = ref<AnchorItem[]>([
     id: 'a2',
     title: 'Hierarchical Image Steganography for Robust Transmission',
     creator: 'Xu 等',
+    type: 'PDF',
     folderId: 'security',
     addedAt: '2025/09/26 14:21:32',
     updatedAt: '2025/10/05 22:08:06',
-    citationCount: 5,
     tags: ['图像', '加密', '安全'],
     summary: '分层隐写策略，兼顾鲁棒性与隐蔽性，适合复杂网络环境。',
     attachments: 2,
   },
   {
     id: 'a3',
-    title: '基于Transformer的课程资料检索与推荐',
+    title: '基于 Transformer 的课程资料检索与推荐',
     creator: 'Zhu 等',
+    type: 'PPTX',
     folderId: 'ai',
     addedAt: '2025/10/12 10:18:28',
     updatedAt: '2025/11/05 19:21:23',
-    citationCount: 8,
     tags: ['NLP', '推荐', '课程资料'],
     summary: '使用多模态 Transformer 聚合课堂资料，支持检索与推荐。',
     attachments: 0,
@@ -58,10 +58,10 @@ const anchors = ref<AnchorItem[]>([
     id: 'a4',
     title: '课程作业质量评估与反馈闭环',
     creator: 'Ma 等',
+    type: 'DOCX',
     folderId: 'writing',
     addedAt: '2025/10/22 09:12:30',
     updatedAt: '2025/10/24 11:30:11',
-    citationCount: 2,
     tags: ['写作', '反馈', '教学'],
     summary: '建立作业评分、批注与改进反馈闭环的流程设计。',
     attachments: 3,
@@ -70,10 +70,10 @@ const anchors = ref<AnchorItem[]>([
     id: 'a5',
     title: '移动端课件访问的安全策略',
     creator: 'Liu 等',
+    type: 'MP4',
     folderId: 'mobile',
     addedAt: '2025/09/12 08:18:00',
     updatedAt: '2025/09/14 09:20:10',
-    citationCount: 1,
     tags: ['移动端', '权限', '安全'],
     summary: '阐述移动端课件的权限管控、离线缓存与防泄露方案。',
     attachments: 1,
@@ -196,10 +196,10 @@ function handleCreateAnchor() {
     id,
     title: '新建资料锚点',
     creator: '未命名',
+    type: 'DOCX',
     folderId: selectedFolderId.value,
     addedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    citationCount: 0,
     tags: [],
     attachments: 0,
     summary: '这是一个示例摘要，可替换为真实数据。',
@@ -207,6 +207,7 @@ function handleCreateAnchor() {
   anchors.value = [anchor, ...anchors.value]
   selectedAnchorId.value = id
 }
+
 
 function handleDeleteAnchor() {
   if (!selectedAnchorId.value) return
@@ -342,17 +343,22 @@ watchEffect(() => {
 onMounted(() => {
   window.addEventListener('click', closeAnchorMenu)
   window.addEventListener('click', closeTagMenu)
+  // 右键时也同步关闭其它菜单，避免同时打开
+  window.addEventListener('contextmenu', closeAnchorMenu, true)
+  window.addEventListener('contextmenu', closeTagMenu, true)
 })
 
 onUnmounted(() => {
   window.removeEventListener('click', closeAnchorMenu)
   window.removeEventListener('click', closeTagMenu)
+  window.removeEventListener('contextmenu', closeAnchorMenu, true)
+  window.removeEventListener('contextmenu', closeTagMenu, true)
 })
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-slate-50">
-    <div class="border-b border-slate-200 bg-white">
+  <div class="flex h-screen flex-col overflow-hidden bg-[#f2f2f2]">
+    <div class="border-b border-slate-200 bg-[#f2f2f2]">
       <FolderTabs
         :open-folders="openFolders"
         :active-folder-id="selectedFolderId"
@@ -363,7 +369,7 @@ onUnmounted(() => {
 
     <div class="flex flex-1 min-h-0 overflow-hidden">
       <!-- 左侧：虚拟文件夹 + 标签 -->
-      <aside class="flex h-full w-72 min-w-[280px] max-w-[280px] flex-col border-r border-slate-200 bg-white min-h-0 overflow-hidden">
+      <aside class="flex h-full w-72 min-w-[280px] max-w-[280px] flex-col border-r border-slate-200 bg-[#f2f2f2] min-h-0 overflow-hidden">
         <div class="flex h-full flex-col p-4">
           <div class="text-sm font-semibold text-slate-700">搜索虚拟文件夹</div>
           <div class="mt-2 flex-1 min-h-0">
@@ -411,7 +417,7 @@ onUnmounted(() => {
       </main>
 
       <!-- 右侧：信息栏 -->
-      <aside class="w-[340px] min-w-[320px] max-w-[360px] border-l border-slate-200 bg-white">
+      <aside class="w-[340px] min-w-[320px] max-w-[360px] border-l border-slate-200 bg-[#f2f2f2]">
         <AnchorDetail :anchor="selectedAnchor" @untag="handleUntag" />
       </aside>
     </div>

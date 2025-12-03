@@ -17,10 +17,10 @@ export type AnchorItem = {
   id: string
   title: string
   creator: string
+  type: string
   folderId: string
   addedAt: string
   updatedAt: string
-  citationCount?: number
   tags: string[]
   summary?: string
   attachments?: number

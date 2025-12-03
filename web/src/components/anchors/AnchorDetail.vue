@@ -11,7 +11,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-slate-50">
+  <div class="flex h-full flex-col bg-[#f2f2f2]">
     <div class="border-b border-slate-200 px-4 py-3">
       <div class="text-sm font-semibold text-slate-800">文件信息</div>
       <div class="text-xs text-slate-500">点击列表中的资料锚点查看详情</div>
@@ -19,7 +19,6 @@ const emit = defineEmits<{
     <div v-if="anchor" class="flex-1 overflow-y-auto p-4 space-y-4">
       <div class="space-y-1">
         <div class="text-sm font-semibold text-slate-800">{{ anchor.title }}</div>
-        <div class="text-xs text-slate-500">创建者：{{ anchor.creator }}</div>
         <div class="text-xs text-slate-500">更新：{{ anchor.updatedAt }}</div>
       </div>
 

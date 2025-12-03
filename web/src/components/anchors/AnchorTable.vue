@@ -5,7 +5,7 @@ import { computed } from 'vue'
 const props = defineProps<{
   anchors: AnchorItem[]
   selectedId: string | null
-  /** 行高控制，默认 32px，可传 number(单位px) 或字符串(如 '30px') */
+  /** 行高控制，默认为32px，可传 number(单位px) 或字符串('30px') */
   rowHeight?: number | string
   editingId?: string | null
 }>()
@@ -40,10 +40,9 @@ const rowHeightStyle = computed(() => {
         <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
           <tr>
             <th class="px-3 py-2 font-semibold">标题</th>
-            <th class="px-3 py-2 font-semibold">创建者</th>
             <th class="px-3 py-2 font-semibold">添加日期</th>
             <th class="px-3 py-2 font-semibold">修改日期</th>
-            <th class="px-3 py-2 font-semibold text-right">引用</th>
+            <th class="px-3 py-2 font-semibold">类型</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -51,7 +50,7 @@ const rowHeightStyle = computed(() => {
             v-for="anchor in anchors"
             :key="anchor.id"
             class="cursor-pointer transition leading-tight"
-            :class="anchor.id === selectedId ? 'bg-blue-50' : 'hover:bg-slate-50'"
+            :class="anchor.id === selectedId ? 'selected-row bg-[#4072E5]' : 'hover:bg-slate-50'"
             :style="{ height: rowHeightStyle, minHeight: rowHeightStyle }"
             @click="emit('select', anchor.id)"
             @contextmenu.prevent="emit('context', { id: anchor.id, x: $event.clientX, y: $event.clientY })"
@@ -59,7 +58,10 @@ const rowHeightStyle = computed(() => {
             <td class="max-w-[320px] px-3 py-0 align-middle">
               <div
                 v-if="props.editingId !== anchor.id"
-                class="truncate whitespace-nowrap text-sm font-medium text-slate-800"
+                :class="[
+                  'truncate whitespace-nowrap text-sm font-medium',
+                  anchor.id === selectedId ? 'text-white' : 'text-slate-800',
+                ]"
               >
                 {{ anchor.title }}
               </div>
@@ -73,21 +75,18 @@ const rowHeightStyle = computed(() => {
                 @keydown.esc.stop.prevent="emit('rename-cancel')"
               />
             </td>
-            <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-700 align-middle">
-              {{ anchor.creator }}
-            </td>
             <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-600 align-middle">
               {{ anchor.addedAt }}
             </td>
             <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-600 align-middle">
               {{ anchor.updatedAt }}
             </td>
-            <td class="whitespace-nowrap px-3 py-0 text-right text-sm text-slate-700 align-middle">
-              {{ anchor.citationCount ?? '—' }}
+            <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-700 align-middle">
+              {{ anchor.type || '未知' }}
             </td>
           </tr>
           <tr v-if="!anchors.length">
-            <td colspan="5" class="px-4 py-6 text-center text-slate-400">
+            <td colspan="4" class="px-4 py-6 text-center text-slate-400">
               暂无资料锚点，选择左侧文件夹以查看
             </td>
           </tr>
@@ -96,3 +95,20 @@ const rowHeightStyle = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.selected-row td {
+  color: #ffffff;
+}
+.selected-row input {
+  color: #0f172a;
+}
+.selected-row td:first-child {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+.selected-row td:last-child {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+</style>

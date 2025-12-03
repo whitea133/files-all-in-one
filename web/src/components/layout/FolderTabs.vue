@@ -13,7 +13,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2 overflow-hidden">
+  <div class="flex items-center gap-3 border-b border-slate-200 bg-[#f2f2f2] px-4 py-2 overflow-hidden">
     <div class="shrink-0 text-xs font-medium text-slate-500">已打开文件夹</div>
     <div class="no-scrollbar flex flex-1 items-center gap-2 overflow-x-auto whitespace-nowrap h-9 pr-4 min-w-0">
       <div
