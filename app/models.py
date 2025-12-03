@@ -6,7 +6,7 @@
 from tortoise.models import Model
 from tortoise import fields
 
-class VirtualFold(Model):
+class VirtualFolder(Model):
     """
         虚拟文件夹
         id: 主键
@@ -42,7 +42,7 @@ class FileAnchor(Model):
     is_valid = fields.BooleanField(default=True)
 
     # 资料锚点与虚拟文件夹的多对多关系
-    virtual_folders = fields.ManyToManyField('models.VirtualFold', related_name='file_anchors', through='fileanchor_virtualfold')
+    virtual_folders = fields.ManyToManyField('models.VirtualFolder', related_name='file_anchors', through='fileanchor_virtualfolder')
     # 资料锚点与标签的多对多关系
     tags = fields.ManyToManyField('models.Tag', related_name='file_anchors', through='fileanchor_tag')
 
