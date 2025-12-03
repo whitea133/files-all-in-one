@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import axios from 'axios'
 import AnchorDetail from '@/components/anchors/AnchorDetail.vue'
 import AnchorTable from '@/components/anchors/AnchorTable.vue'
 import FolderTabs from '@/components/layout/FolderTabs.vue'
@@ -7,90 +8,42 @@ import TagManager from '@/components/layout/TagManager.vue'
 import type { AnchorItem, TagItem, VirtualFolder } from '@/types/ui'
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
-const folders = ref<VirtualFolder[]>([
-  { id: 'all', name: '全部课程资料', color: 'bg-blue-400', icon: 'folder', count: 12 },
-  { id: 'ai', name: '人工智能', color: 'bg-emerald-400', icon: 'folder', count: 4 },
-  { id: 'security', name: '网络安全', color: 'bg-amber-400', icon: 'folder', count: 3 },
-  { id: 'writing', name: '文本文档写作', color: 'bg-indigo-400', icon: 'folder', count: 2 },
-  { id: 'mobile', name: '移动端需求安全', color: 'bg-rose-400', icon: 'folder', count: 3 },
-  { id: 'archive', name: '归档', color: 'bg-slate-400', icon: 'folder', count: 0 },
-  { id: 'recycle', name: '回收站', color: 'bg-slate-500', icon: 'recycle', count: 0 },
-])
+type ApiFolder = {
+  id: number
+  name: string
+  description?: string | null
+  create_time: string
+  is_system: boolean
+}
 
-const anchors = ref<AnchorItem[]>([
-  {
-    id: 'a1',
-    title: 'DiffStega: Training-Free Covert Image Steganography',
-    creator: 'Yang 等',
-    type: 'PDF',
-    folderId: 'security',
-    addedAt: '2025/09/26 14:20:42',
-    updatedAt: '2025/09/26 14:21:25',
-    tags: ['隐写', 'Diffusion', '安全'],
-    summary: '介绍一种基于扩散模型的无载体隐写方法，提升安全性与多样性。',
-    attachments: 1,
-  },
-  {
-    id: 'a2',
-    title: 'Hierarchical Image Steganography for Robust Transmission',
-    creator: 'Xu 等',
-    type: 'PDF',
-    folderId: 'security',
-    addedAt: '2025/09/26 14:21:32',
-    updatedAt: '2025/10/05 22:08:06',
-    tags: ['图像', '加密', '安全'],
-    summary: '分层隐写策略，兼顾鲁棒性与隐蔽性，适合复杂网络环境。',
-    attachments: 2,
-  },
-  {
-    id: 'a3',
-    title: '基于 Transformer 的课程资料检索与推荐',
-    creator: 'Zhu 等',
-    type: 'PPTX',
-    folderId: 'ai',
-    addedAt: '2025/10/12 10:18:28',
-    updatedAt: '2025/11/05 19:21:23',
-    tags: ['NLP', '推荐', '课程资料'],
-    summary: '使用多模态 Transformer 聚合课堂资料，支持检索与推荐。',
-    attachments: 0,
-  },
-  {
-    id: 'a4',
-    title: '课程作业质量评估与反馈闭环',
-    creator: 'Ma 等',
-    type: 'DOCX',
-    folderId: 'writing',
-    addedAt: '2025/10/22 09:12:30',
-    updatedAt: '2025/10/24 11:30:11',
-    tags: ['写作', '反馈', '教学'],
-    summary: '建立作业评分、批注与改进反馈闭环的流程设计。',
-    attachments: 3,
-  },
-  {
-    id: 'a5',
-    title: '移动端课件访问的安全策略',
-    creator: 'Liu 等',
-    type: 'MP4',
-    folderId: 'mobile',
-    addedAt: '2025/09/12 08:18:00',
-    updatedAt: '2025/09/14 09:20:10',
-    tags: ['移动端', '权限', '安全'],
-    summary: '阐述移动端课件的权限管控、离线缓存与防泄露方案。',
-    attachments: 1,
-  },
-])
+type ApiAnchor = {
+  id: number
+  name: string
+  path: string
+  description: string | null
+  is_valid: boolean
+  create_time: string
+  update_time: string
+  virtual_folder_ids: number[]
+  tag_ids: number[]
+}
 
-const tags = ref<TagItem[]>([
-  { id: 't1', name: '安全', color: 'bg-amber-500', usage: 3 },
-  { id: 't2', name: 'Diffusion', color: 'bg-blue-500', usage: 1 },
-  { id: 't3', name: 'NLP', color: 'bg-indigo-500', usage: 1 },
-  { id: 't4', name: '写作', color: 'bg-emerald-500', usage: 1 },
-  { id: 't5', name: '移动端', color: 'bg-rose-500', usage: 1 },
-  { id: 't6', name: '推荐', color: 'bg-cyan-500', usage: 1 },
-])
+type ApiTag = {
+  id: number
+  name: string
+  use_count: number
+}
 
-const openFolders = ref<VirtualFolder[]>(folders.value[0] ? [folders.value[0]] : [])
-const selectedFolderId = ref<string | null>(folders.value[0]?.id ?? null)
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:8000',
+})
+
+const folders = ref<VirtualFolder[]>([])
+const anchors = ref<AnchorItem[]>([])
+const tags = ref<TagItem[]>([])
+
+const openFolders = ref<VirtualFolder[]>([])
+const selectedFolderId = ref<string | null>(null)
 const selectedAnchorId = ref<string | null>(null)
 const selectedTagIds = ref<string[]>([])
 const editingFolderId = ref<string | null>(null)
@@ -108,13 +61,13 @@ const tagMenu = ref<{ visible: boolean; x: number; y: number; targetId: string |
   targetId: null,
 })
 
+const tagIdNameMap = ref(new Map<number, string>())
+const tagNameIdMap = ref(new Map<string, number>())
+
 const tagNameMap = computed(() => new Map(tags.value.map((t) => [t.id, t.name])))
 
 const filteredAnchors = computed(() => {
-  const base =
-    selectedFolderId.value === 'all' || !selectedFolderId.value
-      ? anchors.value
-      : anchors.value.filter((item) => item.folderId === selectedFolderId.value)
+  const base = anchors.value
   if (!selectedTagIds.value.length) return base
   const targetNames = selectedTagIds.value
     .map((id) => tagNameMap.value.get(id) ?? id)
@@ -126,12 +79,98 @@ const selectedAnchor = computed(() =>
   anchors.value.find((item) => item.id === selectedAnchorId.value) || null,
 )
 
+function typeFromPath(path: string | null | undefined): string {
+  if (!path) return '未知'
+  const parts = path.split('.')
+  return parts.length > 1 ? parts.pop()?.toUpperCase() || '文件' : '文件'
+}
+
+function mapAnchor(apiAnchor: ApiAnchor, folderId: string): AnchorItem {
+  const tagNames = apiAnchor.tag_ids
+    .map((id) => tagIdNameMap.value.get(id) || `标签#${id}`)
+    .filter(Boolean)
+  return {
+    id: String(apiAnchor.id),
+    title: apiAnchor.name,
+    creator: '',
+    type: typeFromPath(apiAnchor.path),
+    folderId,
+    addedAt: apiAnchor.create_time,
+    updatedAt: apiAnchor.update_time,
+    tags: tagNames,
+    summary: apiAnchor.description ?? undefined,
+    attachments: undefined,
+  }
+}
+
+async function refreshTags() {
+  const res = await api.get<ApiTag[]>('/tags')
+  tagIdNameMap.value = new Map(res.data.map((t) => [t.id, t.name]))
+  tagNameIdMap.value = new Map(res.data.map((t) => [t.name, t.id]))
+  tags.value = res.data.map((t) => ({ id: String(t.id), name: t.name, usage: t.use_count }))
+}
+
+async function loadFolders() {
+  const res = await api.get<ApiFolder[]>('/folders')
+  const mapped = res.data.map((f) => ({
+    id: String(f.id),
+    name: f.name,
+    description: f.description ?? undefined,
+    isSystem: f.is_system,
+  })) as VirtualFolder[]
+  folders.value = mapped
+  if (!mapped.length) {
+    selectedFolderId.value = null
+    openFolders.value = []
+    return
+  }
+
+  const firstFolder = mapped[0]!
+
+  if (!selectedFolderId.value) {
+    selectedFolderId.value = firstFolder.id
+  } else {
+    const current = mapped.find((f) => f.id === selectedFolderId.value)
+    if (!current) {
+      selectedFolderId.value = firstFolder.id
+    }
+  }
+
+  const current = mapped.find((f) => f.id === selectedFolderId.value) ?? firstFolder
+  if (current && !openFolders.value.find((f) => f.id === current.id)) {
+    openFolders.value.push(current)
+  }
+}
+
+async function loadAnchors(folderId: string) {
+  if (!folderId) return
+  const res = await api.get<ApiAnchor[]>(`/folders/${folderId}/anchors`)
+  anchors.value = res.data.map((a) => mapAnchor(a, folderId))
+  if (!anchors.value.find((a) => a.id === selectedAnchorId.value)) {
+    selectedAnchorId.value = anchors.value[0]?.id ?? null
+  }
+  closeAnchorMenu()
+}
+
+async function initData() {
+  try {
+    await refreshTags()
+    await loadFolders()
+    if (selectedFolderId.value) {
+      await loadAnchors(selectedFolderId.value)
+    }
+  } catch (err) {
+    console.error('初始化数据失败，请检查后端服务是否已启动或接口是否可用', err)
+  }
+}
+
 function handleFolderSelect(folderId: string) {
   selectedFolderId.value = folderId
   const folder = folders.value.find((f) => f.id === folderId)
   if (folder && !openFolders.value.find((f) => f.id === folder.id)) {
     openFolders.value.push(folder)
   }
+  loadAnchors(folderId)
 }
 
 function handleCloseTab(folderId: string) {
@@ -139,6 +178,7 @@ function handleCloseTab(folderId: string) {
   if (selectedFolderId.value === folderId) {
     const fallback = openFolders.value[0] ?? folders.value[0] ?? null
     selectedFolderId.value = fallback?.id ?? null
+    if (selectedFolderId.value) loadAnchors(selectedFolderId.value)
   }
 }
 
@@ -150,23 +190,21 @@ function handleTagToggle(tagId: string) {
   }
 }
 
-function handleCreateFolder() {
+async function handleCreateFolder() {
   const name = `新建文件夹 ${folders.value.length + 1}`
-  const id = `folder-${Date.now()}`
-  const newFolder: VirtualFolder = { id, name, color: 'bg-blue-400', icon: 'folder', count: 0 }
-  folders.value.push(newFolder)
-  handleFolderSelect(id)
+  await api.post('/folders', { name })
+  await loadFolders()
 }
 
-function handleFolderRenameCommit(payload: { id: string; name: string }) {
-  const target = folders.value.find((f) => f.id === payload.id)
-  if (!target || ['all', 'recycle'].includes(target.id)) {
+async function handleFolderRenameCommit(payload: { id: string; name: string }) {
+  const targetName = payload.name.trim()
+  if (!targetName) {
     editingFolderId.value = null
     return
   }
-  const name = payload.name.trim()
-  if (name) target.name = name
+  await api.patch(`/folders/${payload.id}`, { name: targetName })
   editingFolderId.value = null
+  await loadFolders()
 }
 
 function handleFolderRenameCancel() {
@@ -174,45 +212,42 @@ function handleFolderRenameCancel() {
 }
 
 function handleRenameFolder(folderId: string) {
-  if (['all', 'recycle'].includes(folderId)) return
   editingFolderId.value = folderId
 }
 
-function handleDeleteFolder(folderId?: string) {
+async function handleDeleteFolder(folderId?: string) {
   const target = folderId ?? selectedFolderId.value
-  if (!target || ['all', 'recycle'].includes(target)) return
-  anchors.value = anchors.value.filter((a) => a.folderId !== target)
-  recomputeTagUsage()
-  folders.value = folders.value.filter((f) => f.id !== target)
+  if (!target) return
+  await api.delete(`/folders/${target}`)
   openFolders.value = openFolders.value.filter((f) => f.id !== target)
-  const fallback = folders.value[0] ?? null
-  selectedFolderId.value = fallback?.id ?? null
+  selectedFolderId.value = folders.value[0]?.id ?? null
+  await loadFolders()
+  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
 }
 
-function handleCreateAnchor() {
+async function handleCreateAnchor() {
   if (!selectedFolderId.value) return
-  const id = `anchor-${Date.now()}`
-  const anchor: AnchorItem = {
-    id,
-    title: '新建资料锚点',
-    creator: '未命名',
-    type: 'DOCX',
-    folderId: selectedFolderId.value,
-    addedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    tags: [],
-    attachments: 0,
-    summary: '这是一个示例摘要，可替换为真实数据。',
+  const currentFolder = folders.value.find((f) => f.id === selectedFolderId.value)
+  if (currentFolder && (currentFolder as any).isSystem) {
+    window.alert('系统文件夹中不能创建资料，请先选择普通文件夹')
+    return
   }
-  anchors.value = [anchor, ...anchors.value]
-  selectedAnchorId.value = id
+  const payload = {
+    name: '新建资料锚点',
+    path: '/tmp/placeholder.txt',
+    description: '示例描述，可通过接口更新',
+    folder_id: Number(selectedFolderId.value),
+  }
+  await api.post('/anchors', payload)
+  await loadAnchors(selectedFolderId.value)
+  await refreshTags()
 }
 
-
-function handleDeleteAnchor() {
+async function handleDeleteAnchor() {
   if (!selectedAnchorId.value) return
-  anchors.value = anchors.value.filter((a) => a.id !== selectedAnchorId.value)
-  recomputeTagUsage()
+  await api.delete(`/anchors/${selectedAnchorId.value}`)
+  await refreshTags()
+  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
   selectedAnchorId.value = null
 }
 
@@ -232,47 +267,37 @@ function handleRenameAnchor() {
   closeAnchorMenu()
 }
 
-function handleDeleteAnchorByMenu() {
+async function handleDeleteAnchorByMenu() {
   if (!anchorMenu.value.targetId) return
-  anchors.value = anchors.value.filter((a) => a.id !== anchorMenu.value.targetId)
-  if (selectedAnchorId.value === anchorMenu.value.targetId) selectedAnchorId.value = null
-  recomputeTagUsage()
+  selectedAnchorId.value = anchorMenu.value.targetId
+  await handleDeleteAnchor()
   closeAnchorMenu()
 }
 
-function handleAddTagToAnchor() {
+async function handleAddTagToAnchor() {
   const target = anchors.value.find((a) => a.id === anchorMenu.value.targetId)
-  if (!target) return
+  if (!target || !anchorMenu.value.targetId) return
   const input = window.prompt('输入要添加的标签名')
   if (!input) return
   const name = input.trim()
   if (!name) return
-  if (!target.tags.includes(name)) {
-    target.tags = [...target.tags, name]
-  }
-  const existed = tags.value.find((t) => t.name === name)
-  if (!existed) {
-    tags.value.push({
-      id: `tag-${Date.now()}`,
-      name,
-      color: 'bg-blue-400',
-      usage: 1,
-    })
-  } else if (existed.usage !== undefined) {
-    existed.usage += 1
-  }
-  recomputeTagUsage()
+  await api.post(`/anchors/${anchorMenu.value.targetId}/tags`, { names: [name] })
+  await refreshTags()
+  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
   closeAnchorMenu()
 }
 
-function handleAnchorRenameCommit(payload: { id: string; title: string }) {
+async function handleAnchorRenameCommit(payload: { id: string; title: string }) {
   const target = anchors.value.find((a) => a.id === payload.id)
   if (!target) {
     editingAnchorId.value = null
     return
   }
   const title = payload.title.trim()
-  if (title) target.title = title
+  if (title) {
+    await api.patch(`/anchors/${payload.id}`, { name: title })
+    if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
+  }
   editingAnchorId.value = null
 }
 
@@ -280,12 +305,17 @@ function handleAnchorRenameCancel() {
   editingAnchorId.value = null
 }
 
-function handleUntag(tag: string) {
+async function handleUntag(tag: string) {
   if (!selectedAnchorId.value) return
-  const target = anchors.value.find((a) => a.id === selectedAnchorId.value)
-  if (!target) return
-  target.tags = target.tags.filter((t) => t !== tag)
-  recomputeTagUsage()
+  let tagId = tagNameIdMap.value.get(tag)
+  if (!tagId) {
+    await refreshTags()
+    tagId = tagNameIdMap.value.get(tag)
+  }
+  if (!tagId) return
+  await api.delete(`/anchors/${selectedAnchorId.value}/tags/${tagId}`)
+  await refreshTags()
+  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
 }
 
 function openTagMenu(payload: { id: string; x: number; y: number }) {
@@ -297,7 +327,7 @@ function closeTagMenu() {
   tagMenu.value.targetId = null
 }
 
-function handleDeleteTag(id: string) {
+async function handleDeleteTag(id: string) {
   const target = tags.value.find((t) => t.id === id)
   const name = target?.name ?? ''
   const ok = window.confirm(`您确定删除此标签${name ? `「${name}」` : ''}吗？\n此标签将从所有条目中移除。`)
@@ -305,27 +335,11 @@ function handleDeleteTag(id: string) {
     closeTagMenu()
     return
   }
-  tags.value = tags.value.filter((t) => t.id !== id)
+  await api.delete(`/tags/${id}`)
+  await refreshTags()
+  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
   selectedTagIds.value = selectedTagIds.value.filter((t) => t !== id)
-  anchors.value = anchors.value.map((a) => ({
-    ...a,
-    tags: a.tags.filter((tag) => tag !== name && tag !== id),
-  }))
-  recomputeTagUsage()
   closeTagMenu()
-}
-
-function recomputeTagUsage() {
-  const usageMap = new Map<string, number>()
-  anchors.value.forEach((a) => {
-    a.tags.forEach((tag) => {
-      usageMap.set(tag, (usageMap.get(tag) ?? 0) + 1)
-    })
-  })
-  tags.value = tags.value.map((t) => ({
-    ...t,
-    usage: usageMap.get(t.name) ?? 0,
-  }))
 }
 
 watchEffect(() => {
@@ -340,12 +354,12 @@ watchEffect(() => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('click', closeAnchorMenu)
   window.addEventListener('click', closeTagMenu)
-  // 右键时也同步关闭其它菜单，避免同时打开
   window.addEventListener('contextmenu', closeAnchorMenu, true)
   window.addEventListener('contextmenu', closeTagMenu, true)
+  await initData()
 })
 
 onUnmounted(() => {
