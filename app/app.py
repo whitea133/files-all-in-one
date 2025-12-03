@@ -9,6 +9,7 @@ from pathlib import Path  # 操作文件路径
 from pkgutil import iter_modules  # 遍历包中的模块
 
 from fastapi import FastAPI, APIRouter  # 创建FastAPI应用和API路由
+from fastapi.middleware.cors import CORSMiddleware  # 跨域支持
 from fastapi.staticfiles import StaticFiles  # 提供静态文件服务
 from fastapi.responses import FileResponse
 from tortoise.contrib.fastapi import register_tortoise  # 集成Tortoise ORM
@@ -28,6 +29,15 @@ async def lifespan(app: FastAPI):
 
 # 创建FastAPI应用实例（使用 lifespan）
 app = FastAPI(lifespan=lifespan)
+
+# 跨域配置（前端 dev 服务）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 配置Tortoise ORM，使用Sqlite数据库
 register_tortoise(
