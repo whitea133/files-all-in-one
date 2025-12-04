@@ -13,6 +13,7 @@ declare global {
     pywebview?: {
       api?: {
         open_file_dialog?: (folder_id?: number) => Promise<{ files: string[]; folder_id?: number; error?: string }>
+        open_file?: (path: string) => Promise<{ success?: boolean; error?: string }>
       }
     }
   }
@@ -515,13 +516,15 @@ async function handleOpenFile(anchorId: string) {
     return
   }
   try {
-    const res: any = await opener(target.path)
-    if (res?.error) {
-      window.alert(`打开失败：${res.error}`)
+    const res = await opener(target.path)
+    if (!res?.success) {
+      window.alert(`打开失败：${res?.error ?? '未知原因'}`)
     }
   } catch (err) {
     console.error('打开文件失败', err)
     window.alert('打开文件失败，请检查路径或权限')
+  } finally {
+    closeAnchorMenu()
   }
 }
 
