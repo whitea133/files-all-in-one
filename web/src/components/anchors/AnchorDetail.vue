@@ -23,6 +23,13 @@ const emit = defineEmits<{
       </div>
 
       <div class="space-y-1">
+        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">文件路径</div>
+        <div class="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 break-all">
+          {{ anchor.path || '暂无路径' }}
+        </div>
+      </div>
+
+      <div class="space-y-1">
         <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">摘要</div>
         <p class="rounded-md border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-700">
           {{ anchor.summary || '暂无摘要，可从接口或手动输入补全。' }}

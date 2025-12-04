@@ -9,6 +9,7 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'select', folderId: string): void
   (e: 'close', folderId: string): void
+  (e: 'context', payload: { id: string; x: number; y: number; index: number }): void
 }>()
 </script>
 
@@ -22,6 +23,7 @@ const emit = defineEmits<{
         class="flex items-center gap-2 rounded-full border px-3 py-1 text-sm shadow-sm transition hover:border-slate-400"
         :class="folder.id === activeFolderId ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700'"
         style="flex: 0 1 clamp(100px, 12vw, 180px); min-width: 100px; max-width: 200px;"
+        @contextmenu.prevent="(e) => emit('context', { id: folder.id, x: e.clientX, y: e.clientY, index: openFolders.indexOf(folder) })"
       >
         <button
           class="flex min-w-0 flex-1 items-center gap-2 text-left"

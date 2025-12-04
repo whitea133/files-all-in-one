@@ -4,6 +4,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import folderIcon from '@/components/icons/floder_icon.svg'
 import recycleIcon from '@/components/icons/recycle_icon.svg'
 import libraryIcon from '@/components/icons/library.svg'
+import addFolderIcon from '@/components/icons/addFolder_icon.svg'
 
 const props = defineProps<{
   folders: VirtualFolder[]
@@ -102,7 +103,14 @@ onUnmounted(() => {
     <div class="flex items-center justify-between">
       <div class="text-sm font-semibold text-slate-700">虚拟文件夹</div>
       <div class="flex items-center gap-3 text-xs text-slate-500">
-        <button class="hover:text-blue-600" type="button" @click="emit('create')">创建</button>
+        <button
+          class="hover:text-blue-600 cursor-pointer"
+          type="button"
+          title="创建文件夹"
+          @click="emit('create')"
+        >
+          <img class="h-5 w-5" :src="addFolderIcon" alt="创建文件夹" />
+        </button>
       </div>
     </div>
     <div class="mt-2 flex items-center gap-2">

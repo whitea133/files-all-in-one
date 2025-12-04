@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AnchorItem } from '@/types/ui'
+import addAnchorIcon from '@/components/icons/addAnchor_icon.svg'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -33,9 +34,14 @@ const rowHeightStyle = computed(() => {
     <div class="flex items-center justify-between border-b border-slate-200 px-4 py-2">
       <div class="text-sm font-semibold text-slate-700">资料锚点</div>
       <div class="flex items-center gap-2 text-xs text-slate-500">
-        <button class="hover:text-blue-600" type="button" @click="emit('create')">添加</button>
-        <button class="hover:text-blue-600" type="button" @click="emit('delete')">删除</button>
-        <span>导出</span>
+        <button
+          class="hover:text-blue-600 cursor-pointer"
+          type="button"
+          title="创建锚点"
+          @click="emit('create')"
+        >
+          <img class="h-6 w-6" :src="addAnchorIcon" alt="创建锚点" />
+        </button>
       </div>
     </div>
     <div class="flex-1 overflow-y-auto">

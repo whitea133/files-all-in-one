@@ -59,6 +59,13 @@ const recycleFolderId = ref<string | null>(null)
 const allFolderId = ref<string | null>(null)
 const draggingAnchor = ref<{ id: string; folderIds: string[] } | null>(null)
 const hoverFolderId = ref<string | null>(null)
+const folderTabMenu = ref<{ visible: boolean; x: number; y: number; targetId: string | null; index: number }>({
+  visible: false,
+  x: 0,
+  y: 0,
+  targetId: null,
+  index: -1,
+})
 function handleGlobalClickForRename(event: MouseEvent) {
   const target = event.target as HTMLElement | null
   if (target && target.closest('.folder-rename-input')) return
@@ -143,7 +150,7 @@ function mapAnchor(apiAnchor: ApiAnchor, folderId: string): AnchorItem {
 }
 
 async function refreshTags() {
-  const res = await api.get<ApiTag[]>('/tags')
+  const res = await api.get<ApiTag[]>('/tags/popular')
   tagIdNameMap.value = new Map(res.data.map((t) => [t.id, t.name]))
   tagNameIdMap.value = new Map(res.data.map((t) => [t.name, t.id]))
   tags.value = res.data.map((t) => ({ id: String(t.id), name: t.name, usage: t.use_count }))
@@ -257,6 +264,45 @@ function handleCloseTab(folderId: string) {
     selectedFolderId.value = fallback?.id ?? null
     if (selectedFolderId.value) loadAnchors(selectedFolderId.value, { autoSelect: false })
   }
+}
+
+function openFolderTabMenu(payload: { id: string; x: number; y: number; index: number }) {
+  folderTabMenu.value = { visible: true, x: payload.x, y: payload.y, targetId: payload.id, index: payload.index }
+}
+
+function closeFolderTabMenu() {
+  folderTabMenu.value.visible = false
+  folderTabMenu.value.targetId = null
+  folderTabMenu.value.index = -1
+}
+
+function closeOtherFolders() {
+  if (!folderTabMenu.value.targetId) return
+  openFolders.value = openFolders.value.filter((f) => f.id === folderTabMenu.value.targetId)
+  if (selectedFolderId.value !== folderTabMenu.value.targetId) {
+    selectedFolderId.value = folderTabMenu.value.targetId
+    loadAnchors(selectedFolderId.value, { autoSelect: false })
+  }
+  closeFolderTabMenu()
+}
+
+function closeRightFolders() {
+  if (folderTabMenu.value.index < 0) return
+  const keep = openFolders.value.slice(0, folderTabMenu.value.index + 1)
+  const target = keep[keep.length - 1] ?? null
+  openFolders.value = keep
+  if (target && selectedFolderId.value !== target.id) {
+    selectedFolderId.value = target.id
+    loadAnchors(target.id, { autoSelect: false })
+  }
+  closeFolderTabMenu()
+}
+
+function closeAllFolders() {
+  openFolders.value = []
+  selectedFolderId.value = null
+  anchors.value = []
+  closeFolderTabMenu()
 }
 
 function handleAnchorDragStart(payload: { id: string }) {
@@ -588,6 +634,7 @@ onMounted(async () => {
   window.addEventListener('contextmenu', closeAnchorMenu, true)
   window.addEventListener('contextmenu', closeTagMenu, true)
   window.addEventListener('click', handleGlobalClickForRename, true)
+  window.addEventListener('click', closeFolderTabMenu)
   await initData()
 })
 
@@ -600,7 +647,8 @@ onUnmounted(() => {
     anchorRequestAbort.value.abort()
   }
   window.removeEventListener('click', handleGlobalClickForRename, true)
-  })
+  window.removeEventListener('click', closeFolderTabMenu)
+})
 </script>
 
 <template>
@@ -611,6 +659,7 @@ onUnmounted(() => {
         :active-folder-id="selectedFolderId"
         @select="handleFolderSelect"
         @close="handleCloseTab"
+        @context="openFolderTabMenu"
       />
     </div>
 
@@ -752,6 +801,36 @@ onUnmounted(() => {
         @click="() => tagMenu.targetId && handleDeleteTag(tagMenu.targetId)"
       >
         删除标签
+      </button>
+    </div>
+
+    <!-- 打开文件夹标签右键菜单 -->
+    <div
+      v-if="folderTabMenu.visible"
+      class="fixed z-50 w-40 rounded-md border border-slate-200 bg-white shadow-lg shadow-slate-200/80"
+      :style="{ top: folderTabMenu.y + 'px', left: folderTabMenu.x + 'px' }"
+      @click.stop
+    >
+      <button
+        class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+        type="button"
+        @click="closeOtherFolders"
+      >
+        关闭其他文件夹
+      </button>
+      <button
+        class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+        type="button"
+        @click="closeRightFolders"
+      >
+        关闭右边文件夹
+      </button>
+      <button
+        class="flex w-full items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+        type="button"
+        @click="closeAllFolders"
+      >
+        关闭全部文件夹
       </button>
     </div>
   </div>
