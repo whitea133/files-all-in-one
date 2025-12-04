@@ -17,6 +17,7 @@ app/__pycache__/
 app/*.py[oc]
 app/build/
 app/dist/
+app/static/
 app/wheels/
 app/*.egg-info
 app/.venv/
