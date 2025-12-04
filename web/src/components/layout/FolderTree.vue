@@ -3,11 +3,15 @@ import type { VirtualFolder } from '@/types/ui'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import folderIcon from '@/components/icons/floder_icon.svg'
 import recycleIcon from '@/components/icons/recycle_icon.svg'
+import libraryIcon from '@/components/icons/library.svg'
 
 const props = defineProps<{
   folders: VirtualFolder[]
   selectedId: string | null
   editingId?: string | null
+  hoverFolderId?: string | null
+  draggingAnchor?: { id: string; folderIds?: string[] } | null
+  recycleFolderId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -17,7 +21,19 @@ const emit = defineEmits<{
   (e: 'delete', folderId: string): void
   (e: 'rename-commit', payload: { id: string; name: string }): void
   (e: 'rename-cancel'): void
+  (e: 'anchor-drop', folderId: string): void
+  (e: 'anchor-drag-over', folderId: string): void
+  (e: 'anchor-drag-leave'): void
 }>()
+
+const isDropDisabled = (folder: VirtualFolder) => {
+  if (!props.draggingAnchor) return false
+  if (props.draggingAnchor.folderIds?.includes(folder.id)) return true
+  if (folder.isSystem) return true
+  if (props.recycleFolderId && folder.id === props.recycleFolderId) return true
+  if (folder.name === '全部资料') return true
+  return false
+}
 
 const keyword = ref('')
 const contextMenu = ref<{ visible: boolean; x: number; y: number; targetId: string | null }>({
@@ -102,21 +118,28 @@ onUnmounted(() => {
         v-for="folder in visibleFolders"
         :key="folder.id"
         class="group flex w-full items-center gap-3 px-3 py-2 text-left text-[13px] leading-5 transition rounded-md min-h-[36px]"
-        :class="folder.id === selectedId ? 'bg-[#4072E5] text-white' : 'text-slate-700 hover:bg-slate-50'"
+        :class="[
+          folder.id === selectedId ? 'bg-[#4072E5] text-white' : 'text-slate-700 hover:bg-slate-50',
+          hoverFolderId === folder.id && !isDropDisabled(folder) ? 'ring-2 ring-blue-300 ring-offset-0' : '',
+          isDropDisabled(folder) && draggingAnchor ? 'cursor-not-allowed opacity-70' : '',
+        ]"
         type="button"
         @click="emit('select', folder.id)"
         @contextmenu.prevent="openContextMenu($event, folder.id)"
+        @dragover.prevent="emit('anchor-drag-over', folder.id)"
+        @dragleave="emit('anchor-drag-leave')"
+        @drop.prevent="() => !isDropDisabled(folder) && emit('anchor-drop', folder.id)"
       >
         <img
           class="h-4 w-4 shrink-0"
           :class="folder.id === selectedId ? 'brightness-0 invert' : ''"
-          :src="folder.icon === 'recycle' ? recycleIcon : folderIcon"
+          :src="folder.icon === 'recycle' ? recycleIcon : folder.icon === 'library' ? libraryIcon : folderIcon"
           alt=""
         />
         <span v-if="props.editingId !== folder.id" class="flex-1 truncate">{{ folder.name }}</span>
         <input
           v-else
-          class="flex-1 truncate rounded border border-blue-300 px-2 py-1 text-sm outline-none"
+          class="folder-rename-input flex-1 truncate rounded border border-blue-300 px-2 py-1 text-sm outline-none"
           :value="folder.name"
           autofocus
           @keydown.enter.stop.prevent="emit('rename-commit', { id: folder.id, name: ($event.target as HTMLInputElement).value })"

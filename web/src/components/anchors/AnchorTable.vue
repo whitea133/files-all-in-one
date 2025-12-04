@@ -17,6 +17,8 @@ const emit = defineEmits<{
   (e: 'context', payload: { id: string; x: number; y: number }): void
   (e: 'rename-commit', payload: { id: string; title: string }): void
   (e: 'rename-cancel'): void
+  (e: 'drag-start', payload: { id: string }): void
+  (e: 'drag-end'): void
 }>()
 
 const rowHeightStyle = computed(() => {
@@ -54,6 +56,9 @@ const rowHeightStyle = computed(() => {
             :style="{ height: rowHeightStyle, minHeight: rowHeightStyle }"
             @click="emit('select', anchor.id)"
             @contextmenu.prevent="emit('context', { id: anchor.id, x: $event.clientX, y: $event.clientY })"
+            draggable="true"
+            @dragstart.stop="emit('drag-start', { id: anchor.id })"
+            @dragend.stop="emit('drag-end')"
           >
             <td class="max-w-[320px] px-3 py-0 align-middle">
               <div

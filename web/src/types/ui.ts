@@ -4,6 +4,7 @@ export type VirtualFolder = {
   color?: string
   icon?: string
   count?: number
+  isSystem?: boolean
 }
 
 export type TagItem = {
@@ -19,6 +20,7 @@ export type AnchorItem = {
   creator: string
   type: string
   folderId: string
+  folderIds?: string[]
   addedAt: string
   updatedAt: string
   tags: string[]

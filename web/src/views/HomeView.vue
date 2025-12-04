@@ -41,6 +41,18 @@ const api = axios.create({
 const folders = ref<VirtualFolder[]>([])
 const anchors = ref<AnchorItem[]>([])
 const tags = ref<TagItem[]>([])
+const anchorCache = ref<Map<string, AnchorItem[]>>(new Map())
+const anchorRequestAbort = ref<AbortController | null>(null)
+const allowAutoSelectAnchor = ref(true)
+const recycleFolderId = ref<string | null>(null)
+const allFolderId = ref<string | null>(null)
+const draggingAnchor = ref<{ id: string; folderIds: string[] } | null>(null)
+const hoverFolderId = ref<string | null>(null)
+function handleGlobalClickForRename(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (target && target.closest('.folder-rename-input')) return
+  handleFolderRenameCancel()
+}
 
 const openFolders = ref<VirtualFolder[]>([])
 const selectedFolderId = ref<string | null>(null)
@@ -95,6 +107,7 @@ function mapAnchor(apiAnchor: ApiAnchor, folderId: string): AnchorItem {
     creator: '',
     type: typeFromPath(apiAnchor.path),
     folderId,
+    folderIds: apiAnchor.virtual_folder_ids.map((id) => String(id)),
     addedAt: apiAnchor.create_time,
     updatedAt: apiAnchor.update_time,
     tags: tagNames,
@@ -117,8 +130,11 @@ async function loadFolders() {
     name: f.name,
     description: f.description ?? undefined,
     isSystem: f.is_system,
+    icon: f.name === '回收站' ? 'recycle' : f.name === '全部资料' ? 'library' : 'folder',
   })) as VirtualFolder[]
   folders.value = mapped
+  recycleFolderId.value = mapped.find((f) => f.name === '回收站')?.id ?? null
+  allFolderId.value = mapped.find((f) => f.name === '全部资料')?.id ?? null
   if (!mapped.length) {
     selectedFolderId.value = null
     openFolders.value = []
@@ -142,14 +158,47 @@ async function loadFolders() {
   }
 }
 
-async function loadAnchors(folderId: string) {
+async function loadAnchors(folderId: string, options: { force?: boolean; autoSelect?: boolean } = {}) {
   if (!folderId) return
-  const res = await api.get<ApiAnchor[]>(`/folders/${folderId}/anchors`)
-  anchors.value = res.data.map((a) => mapAnchor(a, folderId))
-  if (!anchors.value.find((a) => a.id === selectedAnchorId.value)) {
-    selectedAnchorId.value = anchors.value[0]?.id ?? null
+  const { force = false, autoSelect = true } = options
+
+  const cached = anchorCache.value.get(folderId)
+  if (cached && !force) {
+    anchors.value = cached
+    if (autoSelect) {
+      if (!anchors.value.find((a) => a.id === selectedAnchorId.value)) {
+        selectedAnchorId.value = anchors.value[0]?.id ?? null
+      }
+    } else {
+      selectedAnchorId.value = null
+    }
   }
-  closeAnchorMenu()
+
+  if (anchorRequestAbort.value) {
+    anchorRequestAbort.value.abort()
+  }
+  const controller = new AbortController()
+  anchorRequestAbort.value = controller
+
+  try {
+    const res = await api.get<ApiAnchor[]>(`/folders/${folderId}/anchors`, { signal: controller.signal })
+    const mapped = res.data.map((a) => mapAnchor(a, folderId))
+    anchors.value = mapped
+    anchorCache.value.set(folderId, mapped)
+    allowAutoSelectAnchor.value = autoSelect
+    if (autoSelect) {
+      if (!anchors.value.find((a) => a.id === selectedAnchorId.value)) {
+        selectedAnchorId.value = anchors.value[0]?.id ?? null
+      }
+    } else {
+      selectedAnchorId.value = null
+    }
+  } catch (err: any) {
+    if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return
+    console.error('加载锚点失败', err)
+  } finally {
+    closeAnchorMenu()
+  }
 }
 
 async function initData() {
@@ -157,7 +206,7 @@ async function initData() {
     await refreshTags()
     await loadFolders()
     if (selectedFolderId.value) {
-      await loadAnchors(selectedFolderId.value)
+      await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
     }
   } catch (err) {
     console.error('初始化数据失败，请检查后端服务是否已启动或接口是否可用', err)
@@ -166,11 +215,13 @@ async function initData() {
 
 function handleFolderSelect(folderId: string) {
   selectedFolderId.value = folderId
+  selectedAnchorId.value = null
+  allowAutoSelectAnchor.value = false
   const folder = folders.value.find((f) => f.id === folderId)
   if (folder && !openFolders.value.find((f) => f.id === folder.id)) {
     openFolders.value.push(folder)
   }
-  loadAnchors(folderId)
+  loadAnchors(folderId, { autoSelect: false })
 }
 
 function handleCloseTab(folderId: string) {
@@ -178,7 +229,63 @@ function handleCloseTab(folderId: string) {
   if (selectedFolderId.value === folderId) {
     const fallback = openFolders.value[0] ?? folders.value[0] ?? null
     selectedFolderId.value = fallback?.id ?? null
-    if (selectedFolderId.value) loadAnchors(selectedFolderId.value)
+    if (selectedFolderId.value) loadAnchors(selectedFolderId.value, { autoSelect: false })
+  }
+}
+
+function handleAnchorDragStart(payload: { id: string }) {
+  const anchor = anchors.value.find((a) => a.id === payload.id)
+  draggingAnchor.value = {
+    id: payload.id,
+    folderIds: anchor?.folderIds ?? (anchor?.folderId ? [anchor.folderId] : []),
+  }
+}
+
+function handleAnchorDragEnd() {
+  draggingAnchor.value = null
+  hoverFolderId.value = null
+}
+
+function handleFolderDragOver(folderId: string) {
+  hoverFolderId.value = folderId
+}
+
+async function handleAnchorDrop(folderId: string) {
+  hoverFolderId.value = null
+  if (!draggingAnchor.value) return
+  const targetFolder = folders.value.find((f) => f.id === folderId)
+  if (!targetFolder) return
+  if ((targetFolder as any).isSystem || folderId === recycleFolderId.value || folderId === allFolderId.value) {
+    window.alert('不能绑定到系统文件夹或回收站/全部资料')
+    handleAnchorDragEnd()
+    return
+  }
+  if (draggingAnchor.value.folderIds.includes(folderId)) {
+    window.alert('该资料锚点已在此文件夹中')
+    handleAnchorDragEnd()
+    return
+  }
+  try {
+    await api.post(`/anchors/${draggingAnchor.value.id}/bindFolders`, {
+      folder_ids: [Number(folderId)],
+    })
+    anchorCache.value.forEach((list, key) => {
+      const idx = list.findIndex((a) => a.id === draggingAnchor.value?.id)
+      if (idx >= 0 && draggingAnchor.value) {
+        const updatedFolderIds = Array.from(
+          new Set([...(list[idx].folderIds ?? [list[idx].folderId]), folderId]),
+        )
+        list[idx] = { ...list[idx], folderIds: updatedFolderIds }
+        anchorCache.value.set(key, [...list])
+      }
+    })
+    await loadAnchors(folderId, { force: true, autoSelect: false })
+    window.alert('已加入该文件夹')
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    window.alert(detail ? `绑定失败：${detail}` : '绑定失败，请稍后重试')
+  } finally {
+    handleAnchorDragEnd()
   }
 }
 
@@ -218,11 +325,22 @@ function handleRenameFolder(folderId: string) {
 async function handleDeleteFolder(folderId?: string) {
   const target = folderId ?? selectedFolderId.value
   if (!target) return
+  const confirmed = window.confirm('您确定要删除选中的文件夹吗？\n将不会删除此文件夹下的资料锚点。')
+  if (!confirmed) return
+
+  const currentFolder = folders.value.find((f) => f.id === target)
+  if (currentFolder && (currentFolder as any).isSystem) {
+    window.alert('无法删除系统级虚拟文件夹')
+    return
+  }
+
   await api.delete(`/folders/${target}`)
   openFolders.value = openFolders.value.filter((f) => f.id !== target)
+  anchorCache.value.delete(target)
   selectedFolderId.value = folders.value[0]?.id ?? null
   await loadFolders()
-  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
+  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
+  window.alert('删除成功')
 }
 
 async function handleCreateAnchor() {
@@ -239,7 +357,7 @@ async function handleCreateAnchor() {
     folder_id: Number(selectedFolderId.value),
   }
   await api.post('/anchors', payload)
-  await loadAnchors(selectedFolderId.value)
+  await loadAnchors(selectedFolderId.value, { force: true })
   await refreshTags()
 }
 
@@ -247,7 +365,7 @@ async function handleDeleteAnchor() {
   if (!selectedAnchorId.value) return
   await api.delete(`/anchors/${selectedAnchorId.value}`)
   await refreshTags()
-  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
+  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
   selectedAnchorId.value = null
 }
 
@@ -283,8 +401,46 @@ async function handleAddTagToAnchor() {
   if (!name) return
   await api.post(`/anchors/${anchorMenu.value.targetId}/tags`, { names: [name] })
   await refreshTags()
-  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
+  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
   closeAnchorMenu()
+}
+
+async function handleRestoreFromRecycle() {
+  if (!anchorMenu.value.targetId) return
+  const ok = window.confirm('资料锚点将会恢复到全部资料文件夹里面，是否确认？')
+  if (!ok) return
+  const fallbackFolder = folders.value.find(
+    (f) => !((f as any).isSystem) && f.id !== recycleFolderId.value,
+  )
+  const targetFolderId = fallbackFolder?.id ?? allFolderId.value
+  if (!targetFolderId) {
+    window.alert('未找到可用的目标文件夹，无法恢复')
+    return
+  }
+  try {
+    await api.post(`/anchors/${anchorMenu.value.targetId}/restore`, {
+      folder_id: Number(targetFolderId),
+    })
+    await refreshTags()
+    if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+    closeAnchorMenu()
+    window.alert('恢复成功')
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    window.alert(detail ? `恢复失败：${detail}` : '恢复失败，请稍后重试')
+  }
+}
+
+async function handleClearRecycle() {
+  if (selectedFolderId.value !== recycleFolderId.value) return
+  if (!anchors.value.length) return
+  const ok = window.confirm('确定清空回收站中的所有资料锚点吗？')
+  if (!ok) return
+  const ids = anchors.value.map((a) => a.id)
+  await Promise.allSettled(ids.map((id) => api.delete(`/anchors/${id}`)))
+  anchorCache.value.delete(selectedFolderId.value)
+  await refreshTags()
+  await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
 }
 
 async function handleAnchorRenameCommit(payload: { id: string; title: string }) {
@@ -296,7 +452,7 @@ async function handleAnchorRenameCommit(payload: { id: string; title: string }) 
   const title = payload.title.trim()
   if (title) {
     await api.patch(`/anchors/${payload.id}`, { name: title })
-    if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
+    if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
   }
   editingAnchorId.value = null
 }
@@ -315,7 +471,7 @@ async function handleUntag(tag: string) {
   if (!tagId) return
   await api.delete(`/anchors/${selectedAnchorId.value}/tags/${tagId}`)
   await refreshTags()
-  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
+  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
 }
 
 function openTagMenu(payload: { id: string; x: number; y: number }) {
@@ -349,6 +505,7 @@ watchEffect(() => {
     return
   }
   if (!current.find((item) => item.id === selectedAnchorId.value)) {
+    if (!allowAutoSelectAnchor.value) return
     const first = current[0]
     selectedAnchorId.value = first ? first.id : null
   }
@@ -359,6 +516,7 @@ onMounted(async () => {
   window.addEventListener('click', closeTagMenu)
   window.addEventListener('contextmenu', closeAnchorMenu, true)
   window.addEventListener('contextmenu', closeTagMenu, true)
+  window.addEventListener('click', handleGlobalClickForRename, true)
   await initData()
 })
 
@@ -367,7 +525,11 @@ onUnmounted(() => {
   window.removeEventListener('click', closeTagMenu)
   window.removeEventListener('contextmenu', closeAnchorMenu, true)
   window.removeEventListener('contextmenu', closeTagMenu, true)
-})
+  if (anchorRequestAbort.value) {
+    anchorRequestAbort.value.abort()
+  }
+  window.removeEventListener('click', handleGlobalClickForRename, true)
+  })
 </script>
 
 <template>
@@ -392,12 +554,18 @@ onUnmounted(() => {
               :folders="folders"
               :selected-id="selectedFolderId"
               :editing-id="editingFolderId"
+              :hover-folder-id="hoverFolderId"
+              :dragging-anchor="draggingAnchor"
+              :recycle-folder-id="recycleFolderId"
               @create="handleCreateFolder"
               @rename="handleRenameFolder"
               @rename-commit="handleFolderRenameCommit"
               @rename-cancel="handleFolderRenameCancel"
               @delete="(id) => handleDeleteFolder(id)"
               @select="handleFolderSelect"
+              @anchor-drop="handleAnchorDrop"
+              @anchor-drag-over="handleFolderDragOver"
+              @anchor-drag-leave="() => (hoverFolderId = null)"
             />
           </div>
           <div class="mt-4 shrink-0">
@@ -426,6 +594,8 @@ onUnmounted(() => {
             @rename-commit="handleAnchorRenameCommit"
             @rename-cancel="handleAnchorRenameCancel"
             @select="(id) => (selectedAnchorId = id)"
+            @drag-start="handleAnchorDragStart"
+            @drag-end="handleAnchorDragEnd"
           />
         </div>
       </main>
@@ -443,27 +613,45 @@ onUnmounted(() => {
       :style="{ top: anchorMenu.y + 'px', left: anchorMenu.x + 'px' }"
       @click.stop
     >
-      <button
-        class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-        type="button"
-        @click="handleRenameAnchor"
-      >
-        重命名锚点
-      </button>
-      <button
-        class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-        type="button"
-        @click="handleAddTagToAnchor"
-      >
-        添加标签
-      </button>
-      <button
-        class="flex w-full items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-        type="button"
-        @click="handleDeleteAnchorByMenu"
-      >
-        删除锚点
-      </button>
+      <template v-if="selectedFolderId === recycleFolderId">
+        <button
+          class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          type="button"
+          @click="handleRestoreFromRecycle"
+        >
+          恢复资料锚点
+        </button>
+        <button
+          class="flex w-full items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+          type="button"
+          @click="handleClearRecycle"
+        >
+          清空所有锚点
+        </button>
+      </template>
+      <template v-else>
+        <button
+          class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          type="button"
+          @click="handleRenameAnchor"
+        >
+          重命名锚点
+        </button>
+        <button
+          class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          type="button"
+          @click="handleAddTagToAnchor"
+        >
+          添加标签
+        </button>
+        <button
+          class="flex w-full items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+          type="button"
+          @click="handleDeleteAnchorByMenu"
+        >
+          删除锚点
+        </button>
+      </template>
     </div>
 
     <!-- 标签右键菜单 -->
