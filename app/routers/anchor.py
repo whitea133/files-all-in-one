@@ -121,18 +121,12 @@ async def move_anchor_to_recycle(anchor_id: int) -> AnchorResponse:
     )
 
 
-class AnchorRestore(BaseModel):
-    """请求体：从回收站恢复锚点。"""
-
-    folder_id: int = Field(..., description="恢复后所属的实际虚拟文件夹（不可为“全部资料”/系统文件夹）")
-
-
 @router.post("/{anchor_id}/restore", response_model=AnchorResponse)
-async def restore_anchor(anchor_id: int, payload: AnchorRestore) -> AnchorResponse:
+async def restore_anchor(anchor_id: int) -> AnchorResponse:
     """
     从回收站恢复资料锚点：
     - 必须当前在回收站，否则返回 400。
-    - 恢复时自动绑定“全部资料”与目标文件夹，标签保持为空。
+    - 恢复后默认仅绑定“全部资料”系统文件夹，标签保持为空。
     """
     anchor = await FileAnchor.filter(id=anchor_id).first()
     if not anchor:
@@ -146,19 +140,13 @@ async def restore_anchor(anchor_id: int, payload: AnchorRestore) -> AnchorRespon
     if not in_recycle:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="锚点不在回收站")
 
-    target_folder = await VirtualFolder.filter(id=payload.folder_id).first()
-    if not target_folder:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="虚拟文件夹不存在")
-    if target_folder.name == ALL_FOLDER_NAME or target_folder.is_system:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="不能恢复到“全部资料”或系统文件夹")
-
     all_folder, _ = await VirtualFolder.get_or_create(
         name=ALL_FOLDER_NAME,
         defaults={"description": "系统默认文件夹", "is_system": True},
     )
 
     await anchor.virtual_folders.clear()
-    await anchor.virtual_folders.add(all_folder, target_folder)
+    await anchor.virtual_folders.add(all_folder)
     await anchor.refresh_from_db()
 
     return AnchorResponse(
@@ -169,7 +157,7 @@ async def restore_anchor(anchor_id: int, payload: AnchorRestore) -> AnchorRespon
         is_valid=anchor.is_valid,
         create_time=anchor.create_time,
         update_time=anchor.update_time,
-        virtual_folder_ids=[all_folder.id, target_folder.id],
+        virtual_folder_ids=[all_folder.id],
         tag_ids=[],
     )
 
@@ -238,6 +226,18 @@ class AnchorUpdate(BaseModel):
     description: str | None = None
 
 
+class AnchorRename(BaseModel):
+    """请求体：仅重命名资料锚点。"""
+
+    name: str = Field(..., min_length=1, max_length=255)
+
+
+class AnchorUpdateDescription(BaseModel):
+    """请求体：仅更新资料锚点描述。"""
+
+    description: str | None = None
+
+
 class AnchorAddTags(BaseModel):
     """请求体：为资料锚点添加标签。"""
 
@@ -258,6 +258,64 @@ async def update_anchor(anchor_id: int, payload: AnchorUpdate) -> AnchorResponse
     if payload.description is not None:
         anchor.description = payload.description
 
+    await anchor.save()
+    await anchor.refresh_from_db()
+
+    folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
+    tag_ids = await anchor.tags.all().values_list("id", flat=True)
+
+    return AnchorResponse(
+        id=anchor.id,
+        name=anchor.name,
+        path=anchor.path,
+        description=anchor.description,
+        is_valid=anchor.is_valid,
+        create_time=anchor.create_time,
+        update_time=anchor.update_time,
+        virtual_folder_ids=list(folder_ids),
+        tag_ids=list(tag_ids),
+    )
+
+
+@router.patch("/{anchor_id}/name", response_model=AnchorResponse)
+async def rename_anchor(anchor_id: int, payload: AnchorRename) -> AnchorResponse:
+    """
+    仅重命名资料锚点，并刷新更新时间。
+    """
+    anchor = await FileAnchor.filter(id=anchor_id).first()
+    if not anchor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="资料锚点不存在")
+
+    anchor.name = payload.name
+    await anchor.save()
+    await anchor.refresh_from_db()
+
+    folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
+    tag_ids = await anchor.tags.all().values_list("id", flat=True)
+
+    return AnchorResponse(
+        id=anchor.id,
+        name=anchor.name,
+        path=anchor.path,
+        description=anchor.description,
+        is_valid=anchor.is_valid,
+        create_time=anchor.create_time,
+        update_time=anchor.update_time,
+        virtual_folder_ids=list(folder_ids),
+        tag_ids=list(tag_ids),
+    )
+
+
+@router.patch("/{anchor_id}/description", response_model=AnchorResponse)
+async def update_anchor_description(anchor_id: int, payload: AnchorUpdateDescription) -> AnchorResponse:
+    """
+    仅更新资料锚点描述，并刷新更新时间。
+    """
+    anchor = await FileAnchor.filter(id=anchor_id).first()
+    if not anchor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="资料锚点不存在")
+
+    anchor.description = payload.description
     await anchor.save()
     await anchor.refresh_from_db()
 
