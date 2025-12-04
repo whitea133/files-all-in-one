@@ -45,6 +45,7 @@ const rowHeightStyle = computed(() => {
             <th class="px-3 py-2 font-semibold">标题</th>
             <th class="px-3 py-2 font-semibold">添加日期</th>
             <th class="px-3 py-2 font-semibold">修改日期</th>
+            <th class="px-3 py-2 font-semibold">文件路径</th>
             <th class="px-3 py-2 font-semibold">类型</th>
           </tr>
         </thead>
@@ -86,6 +87,9 @@ const rowHeightStyle = computed(() => {
             </td>
             <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-600 align-middle">
               {{ anchor.updatedAt }}
+            </td>
+            <td class="px-3 py-0 text-sm text-slate-600 align-middle">
+              <div class="truncate max-w-[240px]" :title="anchor.path">{{ anchor.path }}</div>
             </td>
             <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-700 align-middle">
               {{ anchor.type || '未知' }}

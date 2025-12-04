@@ -23,6 +23,7 @@ export type AnchorItem = {
   folderIds?: string[]
   addedAt: string
   updatedAt: string
+  path?: string
   tags: string[]
   summary?: string
   attachments?: number

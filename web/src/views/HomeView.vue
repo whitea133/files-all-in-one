@@ -8,6 +8,16 @@ import TagManager from '@/components/layout/TagManager.vue'
 import type { AnchorItem, TagItem, VirtualFolder } from '@/types/ui'
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
+declare global {
+  interface Window {
+    pywebview?: {
+      api?: {
+        open_file_dialog?: (folder_id?: number) => Promise<{ files: string[]; folder_id?: number; error?: string }>
+      }
+    }
+  }
+}
+
 type ApiFolder = {
   id: number
   name: string
@@ -97,6 +107,20 @@ function typeFromPath(path: string | null | undefined): string {
   return parts.length > 1 ? parts.pop()?.toUpperCase() || '文件' : '文件'
 }
 
+function formatDateTime(value: string | Date | null | undefined): string {
+  if (!value) return ''
+  const date = typeof value === 'string' ? new Date(value) : value
+  if (Number.isNaN(date.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const y = date.getFullYear()
+  const m = pad(date.getMonth() + 1)
+  const d = pad(date.getDate())
+  const hh = pad(date.getHours())
+  const mm = pad(date.getMinutes())
+  const ss = pad(date.getSeconds())
+  return `${y}/${m}/${d} ${hh}:${mm}:${ss}`
+}
+
 function mapAnchor(apiAnchor: ApiAnchor, folderId: string): AnchorItem {
   const tagNames = apiAnchor.tag_ids
     .map((id) => tagIdNameMap.value.get(id) || `标签#${id}`)
@@ -108,8 +132,9 @@ function mapAnchor(apiAnchor: ApiAnchor, folderId: string): AnchorItem {
     type: typeFromPath(apiAnchor.path),
     folderId,
     folderIds: apiAnchor.virtual_folder_ids.map((id) => String(id)),
-    addedAt: apiAnchor.create_time,
-    updatedAt: apiAnchor.update_time,
+    path: apiAnchor.path,
+    addedAt: formatDateTime(apiAnchor.create_time),
+    updatedAt: formatDateTime(apiAnchor.update_time),
     tags: tagNames,
     summary: apiAnchor.description ?? undefined,
     attachments: undefined,
@@ -350,13 +375,36 @@ async function handleCreateAnchor() {
     window.alert('系统文件夹中不能创建资料，请先选择普通文件夹')
     return
   }
-  const payload = {
-    name: '新建资料锚点',
-    path: '/tmp/placeholder.txt',
-    description: '示例描述，可通过接口更新',
-    folder_id: Number(selectedFolderId.value),
+
+  let files: string[] | null = null
+  const picker = window.pywebview?.api?.open_file_dialog
+  if (picker) {
+    try {
+      const res = await picker(Number(selectedFolderId.value))
+      if (res?.error) {
+        window.alert(`打开文件对话框失败：${res.error}`)
+        return
+      }
+      files = res?.files ?? []
+      if (!files.length) return
+    } catch (err) {
+      console.error('打开文件对话框异常', err)
+      return
+    }
   }
-  await api.post('/anchors', payload)
+
+  const targets = files && files.length ? files : ['/tmp/placeholder.txt']
+  for (const filePath of targets) {
+    const base = filePath.split(/[/\\\\]/).pop() || '新建资料锚点'
+    const payload = {
+      name: base,
+      path: filePath,
+      description: '示例描述，可通过接口更新',
+      folder_id: Number(selectedFolderId.value),
+    }
+    await api.post('/anchors', payload)
+  }
+
   await loadAnchors(selectedFolderId.value, { force: true })
   await refreshTags()
 }
@@ -423,11 +471,9 @@ async function handleRestoreFromRecycle() {
 
 async function handleClearRecycle() {
   if (selectedFolderId.value !== recycleFolderId.value) return
-  if (!anchors.value.length) return
   const ok = window.confirm('确定清空回收站中的所有资料锚点吗？')
   if (!ok) return
-  const ids = anchors.value.map((a) => a.id)
-  await Promise.allSettled(ids.map((id) => api.delete(`/anchors/${id}`)))
+  await api.delete('/folders/recycle/empty')
   anchorCache.value.delete(selectedFolderId.value)
   await refreshTags()
   await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
@@ -455,6 +501,28 @@ async function handleUpdateAnchorDescription(anchorId: string) {
   const desc = input.trim()
   await api.patch(`/anchors/${anchorId}/description`, { description: desc || null })
   await loadAnchors(selectedFolderId.value ?? '', { force: true, autoSelect: false })
+}
+
+async function handleOpenFile(anchorId: string) {
+  const target = anchors.value.find((a) => a.id === anchorId)
+  if (!target?.path) {
+    window.alert('未找到可打开的文件路径')
+    return
+  }
+  const opener = window.pywebview?.api?.open_file
+  if (!opener) {
+    window.alert('当前环境不支持直接打开本地文件')
+    return
+  }
+  try {
+    const res: any = await opener(target.path)
+    if (res?.error) {
+      window.alert(`打开失败：${res.error}`)
+    }
+  } catch (err) {
+    console.error('打开文件失败', err)
+    window.alert('打开文件失败，请检查路径或权限')
+  }
 }
 
 function handleAnchorRenameCancel() {
@@ -626,10 +694,17 @@ onUnmounted(() => {
           type="button"
           @click="handleClearRecycle"
         >
-          清空所有锚点
+          清空回收站
         </button>
       </template>
       <template v-else>
+        <button
+          class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          type="button"
+          @click="anchorMenu.targetId && handleOpenFile(anchorMenu.targetId)"
+        >
+          打开文件
+        </button>
         <button
           class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
           type="button"
