@@ -344,10 +344,11 @@ async function handleAnchorDrop(folderId: string) {
     anchorCache.value.forEach((list, key) => {
       const idx = list.findIndex((a) => a.id === draggingAnchor.value?.id)
       if (idx >= 0 && draggingAnchor.value) {
-        const updatedFolderIds = Array.from(
-          new Set([...(list[idx].folderIds ?? [list[idx].folderId]), folderId]),
-        )
-        list[idx] = { ...list[idx], folderIds: updatedFolderIds }
+        const anchorEntry = list[idx]
+        if (!anchorEntry) return
+        const baseFolders = anchorEntry.folderIds ?? (anchorEntry.folderId ? [anchorEntry.folderId] : [])
+        const updatedFolderIds = Array.from(new Set([...baseFolders, folderId]))
+        list[idx] = { ...anchorEntry, folderIds: updatedFolderIds, id: anchorEntry.id }
         anchorCache.value.set(key, [...list])
       }
     })
@@ -521,9 +522,13 @@ async function handleClearRecycle() {
   const ok = window.confirm('确定清空回收站中的所有资料锚点吗？')
   if (!ok) return
   await api.delete('/folders/recycle/empty')
-  anchorCache.value.delete(selectedFolderId.value)
+  if (selectedFolderId.value) {
+    anchorCache.value.delete(selectedFolderId.value)
+  }
   await refreshTags()
-  await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+  if (selectedFolderId.value) {
+    await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+  }
 }
 
 async function handleAnchorRenameCommit(payload: { id: string; title: string }) {
