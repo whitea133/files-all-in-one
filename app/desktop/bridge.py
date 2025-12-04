@@ -50,6 +50,8 @@ class Bridge:
         p = Path(path).expanduser()
         if not p.exists():
             return {"success": False, "error": "not_found"}
+        if not p.is_file():
+            return {"success": False, "error": "not_file"}
 
         try:
             if sys.platform.startswith("win"):
