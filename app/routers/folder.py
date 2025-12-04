@@ -4,11 +4,12 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from tortoise.exceptions import IntegrityError
 
-from models import FileAnchor, VirtualFolder
+from models import FileAnchor, Tag, VirtualFolder
 from routers.anchor import AnchorResponse
 
 
 router = APIRouter(prefix="/folders", tags=["virtual-folders"])
+RECYCLE_FOLDER_NAME = "回收站"
 
 
 class VirtualFolderCreate(BaseModel):
@@ -139,3 +140,22 @@ async def list_folder_anchors(folder_id: int) -> list[AnchorResponse]:
         )
 
     return results
+
+
+@router.delete("/recycle/empty", status_code=status.HTTP_204_NO_CONTENT)
+async def empty_recycle_bin() -> None:
+    """
+    清空回收站：永久删除回收站中的所有资料锚点。
+    """
+    recycle_folder = await VirtualFolder.filter(name=RECYCLE_FOLDER_NAME).first()
+    if not recycle_folder:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="回收站不存在")
+
+    anchors = await FileAnchor.filter(virtual_folders__id=recycle_folder.id).distinct()
+    for anchor in anchors:
+        tags = await anchor.tags.all()
+        for tag in tags:
+            if tag.use_count > 0:
+                tag.use_count -= 1
+                await tag.save()
+        await anchor.delete()
