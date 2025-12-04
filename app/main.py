@@ -12,6 +12,7 @@ from loguru import logger
 
 from app import app
 from desktop.topMenu import topMenu
+from desktop.bridge import Bridge
 
 
 DEFAULT_TITLE = "AmberDay"
@@ -49,7 +50,8 @@ class Client:
             logger.info("Dev mode: start the Vue dev server separately (e.g. `npm run dev -- --host --port 5173`).")
         logger.info("Webview will load frontend [{}] from {}", self.mode, self.frontend_url)
 
-        webview.create_window(DEFAULT_TITLE, url=self.frontend_url, maximized=True, resizable=True)
+        bridge = Bridge()
+        webview.create_window(DEFAULT_TITLE, url=self.frontend_url, maximized=True, resizable=True, js_api=bridge)
         webview.start(menu=topMenu)
 
 
