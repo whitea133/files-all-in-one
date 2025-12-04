@@ -409,18 +409,8 @@ async function handleRestoreFromRecycle() {
   if (!anchorMenu.value.targetId) return
   const ok = window.confirm('资料锚点将会恢复到全部资料文件夹里面，是否确认？')
   if (!ok) return
-  const fallbackFolder = folders.value.find(
-    (f) => !((f as any).isSystem) && f.id !== recycleFolderId.value,
-  )
-  const targetFolderId = fallbackFolder?.id ?? allFolderId.value
-  if (!targetFolderId) {
-    window.alert('未找到可用的目标文件夹，无法恢复')
-    return
-  }
   try {
-    await api.post(`/anchors/${anchorMenu.value.targetId}/restore`, {
-      folder_id: Number(targetFolderId),
-    })
+    await api.post(`/anchors/${anchorMenu.value.targetId}/restore`)
     await refreshTags()
     if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
     closeAnchorMenu()
@@ -451,10 +441,20 @@ async function handleAnchorRenameCommit(payload: { id: string; title: string }) 
   }
   const title = payload.title.trim()
   if (title) {
-    await api.patch(`/anchors/${payload.id}`, { name: title })
+    await api.patch(`/anchors/${payload.id}/name`, { name: title })
     if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
   }
   editingAnchorId.value = null
+}
+
+async function handleUpdateAnchorDescription(anchorId: string) {
+  const target = anchors.value.find((a) => a.id === anchorId)
+  if (!target) return
+  const input = window.prompt('输入新的描述内容', target.summary ?? '')
+  if (input === null) return
+  const desc = input.trim()
+  await api.patch(`/anchors/${anchorId}/description`, { description: desc || null })
+  await loadAnchors(selectedFolderId.value ?? '', { force: true, autoSelect: false })
 }
 
 function handleAnchorRenameCancel() {
@@ -636,6 +636,13 @@ onUnmounted(() => {
           @click="handleRenameAnchor"
         >
           重命名锚点
+        </button>
+        <button
+          class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          type="button"
+          @click="anchorMenu.targetId && handleUpdateAnchorDescription(anchorMenu.targetId)"
+        >
+          更新描述
         </button>
         <button
           class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"

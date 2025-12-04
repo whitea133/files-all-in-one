@@ -19,6 +19,7 @@ const emit = defineEmits<{
   (e: 'rename-cancel'): void
   (e: 'drag-start', payload: { id: string }): void
   (e: 'drag-end'): void
+  (e: 'update-description', anchorId: string): void
 }>()
 
 const rowHeightStyle = computed(() => {
