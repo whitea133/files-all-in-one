@@ -17,3 +17,7 @@ dependencies = [
 dev = [
     "pyinstaller>=6.17.0",
 ]
+
+[[tool.uv.index]]
+url = "https://mirrors.aliyun.com/pypi/simple/"
+default = true
