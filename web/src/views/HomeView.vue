@@ -6,6 +6,14 @@ import FolderTabs from '@/components/layout/FolderTabs.vue'
 import FolderTree from '@/components/layout/FolderTree.vue'
 import TagManager from '@/components/layout/TagManager.vue'
 import type { AnchorItem, TagItem, VirtualFolder } from '@/types/ui'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
 declare global {
@@ -65,6 +73,23 @@ const folderTabMenu = ref<{ visible: boolean; x: number; y: number; targetId: st
   y: 0,
   targetId: null,
   index: -1,
+})
+const dialogState = ref<{
+  open: boolean
+  title: string
+  description: string
+  value: string
+  placeholder: string
+  mode: 'description' | 'tag'
+  anchorId: string | null
+}>({
+  open: false,
+  title: '',
+  description: '',
+  value: '',
+  placeholder: '',
+  mode: 'description',
+  anchorId: null,
 })
 function handleGlobalClickForRename(event: MouseEvent) {
   const target = event.target as HTMLElement | null
@@ -491,13 +516,15 @@ async function handleDeleteAnchorByMenu() {
 async function handleAddTagToAnchor() {
   const target = anchors.value.find((a) => a.id === anchorMenu.value.targetId)
   if (!target || !anchorMenu.value.targetId) return
-  const input = window.prompt('输入要添加的标签名')
-  if (!input) return
-  const name = input.trim()
-  if (!name) return
-  await api.post(`/anchors/${anchorMenu.value.targetId}/tags`, { names: [name] })
-  await refreshTags()
-  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
+  dialogState.value = {
+    open: true,
+    title: '添加标签',
+    description: '为该锚点添加一个新标签',
+    value: '',
+    placeholder: '输入标签名称',
+    mode: 'tag',
+    anchorId: target.id,
+  }
   closeAnchorMenu()
 }
 
@@ -548,11 +575,63 @@ async function handleAnchorRenameCommit(payload: { id: string; title: string }) 
 async function handleUpdateAnchorDescription(anchorId: string) {
   const target = anchors.value.find((a) => a.id === anchorId)
   if (!target) return
-  const input = window.prompt('输入新的描述内容', target.summary ?? '')
-  if (input === null) return
-  const desc = input.trim()
-  await api.patch(`/anchors/${anchorId}/description`, { description: desc || null })
-  await loadAnchors(selectedFolderId.value ?? '', { force: true, autoSelect: false })
+  dialogState.value = {
+    open: true,
+    title: '更新描述',
+    description: '请输入新的描述内容',
+    value: target.summary ?? '',
+    placeholder: '描述内容',
+    mode: 'description',
+    anchorId,
+  }
+  closeAnchorMenu()
+}
+
+function resetDialogState() {
+  dialogState.value = {
+    open: false,
+    title: '',
+    description: '',
+    value: '',
+    placeholder: '',
+    mode: 'description',
+    anchorId: null,
+  }
+}
+
+function handleDialogCancel() {
+  resetDialogState()
+}
+
+async function handleDialogConfirm() {
+  const state = dialogState.value
+  if (!state.anchorId) {
+    resetDialogState()
+    return
+  }
+  const text = state.value.trim()
+  try {
+    if (state.mode === 'description') {
+      await api.patch(`/anchors/${state.anchorId}/description`, { description: text || null })
+      if (selectedFolderId.value) {
+        await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+      }
+    } else if (state.mode === 'tag') {
+      if (!text) {
+        window.alert('标签名称不能为空')
+        return
+      }
+      await api.post(`/anchors/${state.anchorId}/tags`, { names: [text] })
+      await refreshTags()
+      if (selectedFolderId.value) {
+        await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+      }
+    }
+    resetDialogState()
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    window.alert(detail ? `操作失败：${detail}` : '操作失败，请稍后重试')
+  }
 }
 
 async function handleOpenFile(anchorId: string) {
@@ -581,6 +660,13 @@ async function handleOpenFile(anchorId: string) {
 
 function handleAnchorRenameCancel() {
   editingAnchorId.value = null
+}
+
+function handleGlobalClickForAnchorRename(event: MouseEvent) {
+  if (!editingAnchorId.value) return
+  const target = event.target as HTMLElement | null
+  if (target && target.closest('.anchor-rename-input')) return
+  handleAnchorRenameCancel()
 }
 
 async function handleUntag(tag: string) {
@@ -640,6 +726,7 @@ onMounted(async () => {
   window.addEventListener('contextmenu', closeTagMenu, true)
   window.addEventListener('click', handleGlobalClickForRename, true)
   window.addEventListener('click', closeFolderTabMenu)
+  window.addEventListener('click', handleGlobalClickForAnchorRename, true)
   await initData()
 })
 
@@ -653,6 +740,7 @@ onUnmounted(() => {
   }
   window.removeEventListener('click', handleGlobalClickForRename, true)
   window.removeEventListener('click', closeFolderTabMenu)
+  window.removeEventListener('click', handleGlobalClickForAnchorRename, true)
 })
 </script>
 
@@ -670,10 +758,9 @@ onUnmounted(() => {
 
     <div class="flex flex-1 min-h-0 overflow-hidden">
       <!-- 左侧：虚拟文件夹 + 标签 -->
-      <aside class="flex h-full w-72 min-w-[280px] max-w-[280px] flex-col border-r border-slate-200 bg-[#f2f2f2] min-h-0 overflow-hidden">
+      <aside class="flex h-full w-64 min-w-[240px] max-w-[260px] flex-col border-r border-slate-200 bg-[#f2f2f2] min-h-0 overflow-hidden">
         <div class="flex h-full flex-col p-4">
-          <div class="text-sm font-semibold text-slate-700">搜索虚拟文件夹</div>
-          <div class="mt-2 flex-1 min-h-0">
+          <div class="flex-1 min-h-0">
             <FolderTree
               class="h-full"
               :folders="folders"
@@ -838,5 +925,49 @@ onUnmounted(() => {
         关闭全部文件夹
       </button>
     </div>
+
+    <!-- 通用对话框：更新描述 / 添加标签 -->
+    <Dialog v-model:open="dialogState.open">
+      <DialogContent class="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>{{ dialogState.title }}</DialogTitle>
+          <DialogDescription>{{ dialogState.description }}</DialogDescription>
+        </DialogHeader>
+        <div class="mt-4 space-y-2">
+          <template v-if="dialogState.mode === 'description'">
+            <textarea
+              v-model="dialogState.value"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+              rows="4"
+              :placeholder="dialogState.placeholder"
+            ></textarea>
+          </template>
+          <template v-else>
+            <input
+              v-model="dialogState.value"
+              type="text"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+              :placeholder="dialogState.placeholder"
+            />
+          </template>
+        </div>
+        <DialogFooter class="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            @click="handleDialogCancel"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            @click="handleDialogConfirm"
+          >
+            确认
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

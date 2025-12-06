@@ -80,11 +80,11 @@ const rowHeightStyle = computed(() => {
               </div>
               <input
                 v-else
-                class="w-full truncate rounded border border-blue-300 px-2 py-1 text-sm outline-none"
+                class="anchor-rename-input w-full truncate rounded border border-blue-300 px-2 py-1 text-sm outline-none"
                 :value="anchor.title"
                 autofocus
                 @keydown.enter.stop.prevent="emit('rename-commit', { id: anchor.id, title: ($event.target as HTMLInputElement).value })"
-                @blur="emit('rename-commit', { id: anchor.id, title: ($event.target as HTMLInputElement).value })"
+                @blur="emit('rename-cancel')"
                 @keydown.esc.stop.prevent="emit('rename-cancel')"
               />
             </td>
