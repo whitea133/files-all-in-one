@@ -7,6 +7,7 @@ import webview
 """
 
 router = APIRouter(prefix="/windows", tags=["windows"])
+_setting_window = None  # 控制只能打开一个设置窗口，单例控制
 
 
 @router.get("/setting")
@@ -20,5 +21,25 @@ def open_setting_window():
     default_url = "http://localhost:5173/static/setting"
 
     window_url = default_url
-    webview.create_window("设置", url=window_url, width=900, height=640, resizable=True)
+
+    global _setting_window
+    if _setting_window:
+        try:
+            _setting_window.restore()
+            _setting_window.focus()
+        except Exception:
+            pass
+        return {"status": "ok", "url": window_url, "existing": True}
+
+    _setting_window = webview.create_window("设置", url=window_url, width=600, height=640, x=500, y=150,
+                                            resizable=False, on_top=True)
+    print("窗口位置: ", webview.screens[0])
+
+    def _on_closed():
+        global _setting_window
+        _setting_window = None
+
+    _setting_window.events.closed += _on_closed # 注册函数，当窗口被关闭时自动触发回调函数_on_closed
+
+    
     return {"status": "ok", "url": window_url}
