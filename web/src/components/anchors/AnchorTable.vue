@@ -35,12 +35,17 @@ const rowHeightStyle = computed(() => {
       <div class="text-sm font-semibold text-slate-700">资料锚点</div>
       <div class="flex items-center gap-2 text-xs text-slate-500">
         <button
-          class="hover:text-blue-600 cursor-pointer"
+          class="hover:text-blue-600 cursor-pointer transition"
           type="button"
           title="创建锚点"
           @click="emit('create')"
         >
-          <img class="h-6 w-6" :src="addAnchorIcon" alt="创建锚点" />
+          <img
+            class="h-6 w-6 transition"
+            :class="'hover:[filter:invert(35%)_sepia(93%)_saturate(1820%)_hue-rotate(201deg)_brightness(95%)_contrast(89%)]'"
+            :src="addAnchorIcon"
+            alt="创建锚点"
+          />
         </button>
       </div>
     </div>
@@ -72,15 +77,15 @@ const rowHeightStyle = computed(() => {
               <div
                 v-if="props.editingId !== anchor.id"
                 :class="[
-                  'truncate whitespace-nowrap text-sm font-medium',
-                  anchor.id === selectedId ? 'text-white' : 'text-slate-800',
+                  'truncate whitespace-nowrap text-[13px] font-medium',
+                  anchor.id === selectedId ? 'text-white' : 'text-slate-900',
                 ]"
               >
                 {{ anchor.title }}
               </div>
               <input
                 v-else
-                class="anchor-rename-input w-full truncate rounded border border-blue-300 px-2 py-1 text-sm outline-none"
+                class="anchor-rename-input w-full truncate rounded border border-blue-300 px-2 py-1 text-[13px] outline-none"
                 :value="anchor.title"
                 autofocus
                 @keydown.enter.stop.prevent="emit('rename-commit', { id: anchor.id, title: ($event.target as HTMLInputElement).value })"
@@ -88,16 +93,16 @@ const rowHeightStyle = computed(() => {
                 @keydown.esc.stop.prevent="emit('rename-cancel')"
               />
             </td>
-            <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-600 align-middle">
+            <td class="whitespace-nowrap px-3 py-0 text-[13px] text-slate-900 align-middle">
               {{ anchor.addedAt }}
             </td>
-            <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-600 align-middle">
+            <td class="whitespace-nowrap px-3 py-0 text-[13px] text-slate-900 align-middle">
               {{ anchor.updatedAt }}
             </td>
-            <td class="px-3 py-0 text-sm text-slate-600 align-middle">
+            <td class="px-3 py-0 text-[13px] text-slate-900 align-middle">
               <div class="truncate max-w-[240px]" :title="anchor.path">{{ anchor.path }}</div>
             </td>
-            <td class="whitespace-nowrap px-3 py-0 text-sm text-slate-700 align-middle">
+            <td class="whitespace-nowrap px-3 py-0 text-[13px] text-slate-900 align-middle">
               {{ anchor.type || '未知' }}
             </td>
           </tr>

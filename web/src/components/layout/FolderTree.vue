@@ -104,12 +104,17 @@ onUnmounted(() => {
       <div class="text-sm font-semibold text-slate-700">虚拟文件夹</div>
       <div class="flex items-center gap-3 text-xs text-slate-500">
         <button
-          class="hover:text-blue-600 cursor-pointer"
+          class="hover:text-blue-600 cursor-pointer transition"
           type="button"
           title="创建文件夹"
           @click="emit('create')"
         >
-          <img class="h-5 w-5" :src="addFolderIcon" alt="创建文件夹" />
+          <img
+            class="h-5 w-5 transition"
+            :class="'hover:[filter:invert(35%)_sepia(93%)_saturate(1820%)_hue-rotate(201deg)_brightness(95%)_contrast(89%)]'"
+            :src="addFolderIcon"
+            alt="创建文件夹"
+          />
         </button>
       </div>
     </div>
@@ -125,11 +130,14 @@ onUnmounted(() => {
       <button
         v-for="folder in visibleFolders"
         :key="folder.id"
-        class="group flex w-full items-center gap-3 px-3 py-2 text-left text-[13px] leading-5 transition rounded-md min-h-[36px]"
+        class="group flex w-full items-center gap-3 px-3 py-1.5 text-left text-[13px] leading-5 transition rounded-md min-h-[32px] border border-transparent"
         :class="[
-          folder.id === selectedId ? 'bg-[#4072E5] text-white' : 'text-slate-700 hover:bg-slate-50',
-          hoverFolderId === folder.id && !isDropDisabled(folder) ? 'ring-2 ring-blue-300 ring-offset-0' : '',
-          isDropDisabled(folder) && draggingAnchor ? 'cursor-not-allowed opacity-70' : '',
+          folder.id === selectedId ? 'bg-[#4072E5] text-white' : 'text-slate-800 hover:bg-slate-50',
+          hoverFolderId === folder.id && !isDropDisabled(folder)
+            ? 'bg-blue-50 ring-2 ring-blue-300 ring-offset-0 border-blue-200'
+            : '',
+          draggingAnchor && !isDropDisabled(folder) ? 'border-blue-200' : '',
+          isDropDisabled(folder) && draggingAnchor ? 'cursor-not-allowed opacity-60 grayscale' : '',
         ]"
         type="button"
         @click="emit('select', folder.id)"

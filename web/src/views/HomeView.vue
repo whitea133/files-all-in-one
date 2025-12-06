@@ -91,6 +91,17 @@ const dialogState = ref<{
   mode: 'description',
   anchorId: null,
 })
+const confirmState = ref<{
+  open: boolean
+  title: string
+  description: string
+  onConfirm: (() => Promise<void>) | null
+}>({
+  open: false,
+  title: '',
+  description: '',
+  onConfirm: null,
+})
 function handleGlobalClickForRename(event: MouseEvent) {
   const target = event.target as HTMLElement | null
   if (target && target.closest('.folder-rename-input')) return
@@ -137,7 +148,7 @@ const selectedAnchor = computed(() =>
 function typeFromPath(path: string | null | undefined): string {
   if (!path) return '未知'
   const parts = path.split('.')
-  return parts.length > 1 ? parts.pop()?.toUpperCase() || '文件' : '文件'
+  return parts.length > 1 ? (parts.pop() || '文件').toLowerCase() : '文件'
 }
 
 function formatDateTime(value: string | Date | null | undefined): string {
@@ -423,8 +434,6 @@ function handleRenameFolder(folderId: string) {
 async function handleDeleteFolder(folderId?: string) {
   const target = folderId ?? selectedFolderId.value
   if (!target) return
-  const confirmed = window.confirm('您确定要删除选中的文件夹吗？\n将不会删除此文件夹下的资料锚点。')
-  if (!confirmed) return
 
   const currentFolder = folders.value.find((f) => f.id === target)
   if (currentFolder && (currentFolder as any).isSystem) {
@@ -432,13 +441,22 @@ async function handleDeleteFolder(folderId?: string) {
     return
   }
 
-  await api.delete(`/folders/${target}`)
-  openFolders.value = openFolders.value.filter((f) => f.id !== target)
-  anchorCache.value.delete(target)
-  selectedFolderId.value = folders.value[0]?.id ?? null
-  await loadFolders()
-  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
-  window.alert('删除成功')
+  const doDelete = async () => {
+    await api.delete(`/folders/${target}`)
+    openFolders.value = openFolders.value.filter((f) => f.id !== target)
+    anchorCache.value.delete(target)
+    selectedFolderId.value = folders.value[0]?.id ?? null
+    await loadFolders()
+    if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
+    window.alert('删除成功')
+  }
+
+  confirmState.value = {
+    open: true,
+    title: '删除文件夹',
+    description: '您确定要删除选中的文件夹吗？\n将不会删除此文件夹下的资料锚点。',
+    onConfirm: doDelete,
+  }
 }
 
 async function handleCreateAnchor() {
@@ -530,31 +548,36 @@ async function handleAddTagToAnchor() {
 
 async function handleRestoreFromRecycle() {
   if (!anchorMenu.value.targetId) return
-  const ok = window.confirm('资料锚点将会恢复到全部资料文件夹里面，是否确认？')
-  if (!ok) return
-  try {
-    await api.post(`/anchors/${anchorMenu.value.targetId}/restore`)
-    await refreshTags()
-    if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
-    closeAnchorMenu()
-    window.alert('恢复成功')
-  } catch (err: any) {
-    const detail = err?.response?.data?.detail
-    window.alert(detail ? `恢复失败：${detail}` : '恢复失败，请稍后重试')
+  const targetId = anchorMenu.value.targetId
+  confirmState.value = {
+    open: true,
+    title: '恢复资料锚点',
+    description: '资料锚点将会恢复到全部资料文件夹里面，是否确认？',
+    onConfirm: async () => {
+      await api.post(`/anchors/${targetId}/restore`)
+      await refreshTags()
+      if (selectedFolderId.value) {
+        await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+      }
+      closeAnchorMenu()
+    },
   }
 }
 
 async function handleClearRecycle() {
   if (selectedFolderId.value !== recycleFolderId.value) return
-  const ok = window.confirm('确定清空回收站中的所有资料锚点吗？')
-  if (!ok) return
-  await api.delete('/folders/recycle/empty')
-  if (selectedFolderId.value) {
-    anchorCache.value.delete(selectedFolderId.value)
-  }
-  await refreshTags()
-  if (selectedFolderId.value) {
-    await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+  confirmState.value = {
+    open: true,
+    title: '清空回收站',
+    description: '将清空回收站中的所有资料锚点，是否确认？',
+    onConfirm: async () => {
+      await api.delete('/folders/recycle/empty')
+      if (selectedFolderId.value) {
+        anchorCache.value.delete(selectedFolderId.value)
+        await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+      }
+      await refreshTags()
+    },
   }
 }
 
@@ -601,6 +624,23 @@ function resetDialogState() {
 
 function handleDialogCancel() {
   resetDialogState()
+}
+
+function handleConfirmCancel() {
+  confirmState.value = { open: false, title: '', description: '', onConfirm: null }
+}
+
+async function handleConfirmOk() {
+  const action = confirmState.value.onConfirm
+  confirmState.value = { open: false, title: '', description: '', onConfirm: null }
+  if (action) {
+    try {
+      await action()
+    } catch (err) {
+      console.error('确认操作失败', err)
+      window.alert('操作失败，请稍后重试')
+    }
+  }
 }
 
 async function handleDialogConfirm() {
@@ -963,6 +1003,32 @@ onUnmounted(() => {
             type="button"
             class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             @click="handleDialogConfirm"
+          >
+            确认
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- 通用确认对话框（恢复、清空回收站等） -->
+    <Dialog v-model:open="confirmState.open">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle>{{ confirmState.title }}</DialogTitle>
+          <DialogDescription>{{ confirmState.description }}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            @click="handleConfirmCancel"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            @click="handleConfirmOk"
           >
             确认
           </button>
