@@ -15,7 +15,7 @@ def open_setting_window():
     打开“设置”子窗口，加载前端的 /setting 页面。
     """
     # 静态版
-    # default_url = "http://localhost:8000/static/setting"
+    # default_url = "http://localhost:8000/setting"
     # 开发版（如需改用前端 dev server，取消下一行注释）
     default_url = "http://localhost:5173/static/setting"
 

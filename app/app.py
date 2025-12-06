@@ -57,6 +57,12 @@ app.mount("/static", StaticFiles(directory=static_file_abspath), name="static")
 def index():
     return FileResponse(f"{static_file_abspath}/index.html")
 
+# 前端 SPA 路由回退（history 模式下，直接访问前端路由时返回 index.html）
+@app.get("/setting")
+@app.get("/about")
+def spa_entry():
+    return FileResponse(f"{static_file_abspath}/index.html")
+
 # 定义一个字典用于缓存已导入的模块，避免重复导入
 _imported_modules = {}
 
