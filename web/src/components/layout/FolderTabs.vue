@@ -41,11 +41,12 @@ const emit = defineEmits<{
           <span class="truncate">{{ folder.name }}</span>
         </button>
         <button
-          class="shrink-0 text-xs text-slate-400 hover:text-slate-600"
+          class="group flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs text-slate-400 transition hover:bg-red-100 hover:text-red-600 cursor-pointer"
           type="button"
+          title="关闭"
           @click="emit('close', folder.id)"
         >
-          ×
+          <span class="pointer-events-none select-none">×</span>
         </button>
       </div>
     </div>

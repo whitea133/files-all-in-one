@@ -5,7 +5,6 @@ import AnchorTable from '@/components/anchors/AnchorTable.vue'
 import FolderTabs from '@/components/layout/FolderTabs.vue'
 import FolderTree from '@/components/layout/FolderTree.vue'
 import TagManager from '@/components/layout/TagManager.vue'
-import TopMenu from '@/components/layout/TopMenu.vue'
 import type { AnchorItem, TagItem, VirtualFolder } from '@/types/ui'
 import {
   Dialog,
@@ -659,22 +658,6 @@ function handleInfoClose() {
   infoState.value = { open: false, title: '', description: '' }
 }
 
-function handleOpenSettings() {
-  infoState.value = {
-    open: true,
-    title: '设置',
-    description: '设置功能敬请期待。',
-  }
-}
-
-function handleOpenAbout() {
-  infoState.value = {
-    open: true,
-    title: '关于',
-    description: 'AmberDay 桌面版，课程资料管理。',
-  }
-}
-
 async function handleConfirmOk() {
   const action = confirmState.value.onConfirm
   confirmState.value = { open: false, title: '', description: '', onConfirm: null }
@@ -831,7 +814,6 @@ onUnmounted(() => {
 
 <template>
   <div class="flex h-screen flex-col overflow-hidden bg-[#f2f2f2]">
-    <TopMenu @settings="handleOpenSettings" @about="handleOpenAbout" />
     <div class="border-b border-slate-200 bg-[#f2f2f2]">
       <FolderTabs
         :open-folders="openFolders"
