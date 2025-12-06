@@ -58,7 +58,7 @@ async def create_anchor(payload: AnchorCreate) -> AnchorResponse:
     anchor = await FileAnchor.create(
         name=payload.name,
         path=payload.path,
-        description=payload.description,
+        description=payload.description or "暂无描述",
     )
 
     await anchor.virtual_folders.add(all_folder, target_folder)

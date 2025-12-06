@@ -52,7 +52,8 @@ class Client:
 
         bridge = Bridge()
         webview.create_window(DEFAULT_TITLE, url=self.frontend_url, maximized=True, resizable=True, js_api=bridge)
-        webview.start(menu=topMenu)
+        # webview.start(menu=topMenu)
+        webview.start()
 
 
 if __name__ == "__main__":

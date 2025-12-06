@@ -17,13 +17,14 @@ from DBsettings import TORTOISE_ORM  # 数据库配置
 from loguru import logger  # 记录日志
 import os
 
-from db_init import ensure_system_virtual_folders
+from db_init import ensure_system_virtual_folders, check_anchor_paths
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """使用 lifespan 取代已弃用的 startup 事件。"""
     await ensure_system_virtual_folders()
+    await check_anchor_paths()
     yield
 
 
