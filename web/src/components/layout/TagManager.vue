@@ -25,11 +25,13 @@ const emit = defineEmits<{
         <button
           v-for="tag in tags"
           :key="tag.id"
-          class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition max-w-[200px]"
-          :class="selectedTagIds.includes(tag.id) ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'"
+          class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition max-w-[200px] cursor-pointer"
+          :class="selectedTagIds.includes(tag.id) ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700'"
           type="button"
           @click="emit('toggle', tag.id)"
           @contextmenu.prevent="emit('context', { id: tag.id, x: $event.clientX, y: $event.clientY })"
+          @mouseenter="(e) => { if (!selectedTagIds.includes(tag.id)) { (e.currentTarget as HTMLButtonElement).classList.add('border-blue-300','text-blue-700') } }"
+          @mouseleave="(e) => { if (!selectedTagIds.includes(tag.id)) { (e.currentTarget as HTMLButtonElement).classList.remove('border-blue-300','text-blue-700') } }"
         >
           <span class="truncate">{{ tag.name }}</span>
           <span v-if="tag.usage !== undefined" class="text-[11px] text-slate-400">({{ tag.usage }})</span>

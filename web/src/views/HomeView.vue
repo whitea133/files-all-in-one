@@ -5,6 +5,7 @@ import AnchorTable from '@/components/anchors/AnchorTable.vue'
 import FolderTabs from '@/components/layout/FolderTabs.vue'
 import FolderTree from '@/components/layout/FolderTree.vue'
 import TagManager from '@/components/layout/TagManager.vue'
+import TopMenu from '@/components/layout/TopMenu.vue'
 import type { AnchorItem, TagItem, VirtualFolder } from '@/types/ui'
 import {
   Dialog,
@@ -101,6 +102,15 @@ const confirmState = ref<{
   title: '',
   description: '',
   onConfirm: null,
+})
+const infoState = ref<{
+  open: boolean
+  title: string
+  description: string
+}>({
+  open: false,
+  title: '',
+  description: '',
 })
 function handleGlobalClickForRename(event: MouseEvent) {
   const target = event.target as HTMLElement | null
@@ -407,9 +417,21 @@ function handleTagToggle(tagId: string) {
 }
 
 async function handleCreateFolder() {
-  const name = `新建文件夹 ${folders.value.length + 1}`
-  await api.post('/folders', { name })
-  await loadFolders()
+  const existingNames = new Set(folders.value.map((f) => f.name))
+  const base = '新建文件夹'
+  let idx = 1
+  let name = `${base} ${idx}`
+  while (existingNames.has(name)) {
+    idx += 1
+    name = `${base} ${idx}`
+  }
+  try {
+    await api.post('/folders', { name })
+    await loadFolders()
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    window.alert(detail ? `创建失败：${detail}` : '创建失败，请稍后重试')
+  }
 }
 
 async function handleFolderRenameCommit(payload: { id: string; name: string }) {
@@ -448,7 +470,6 @@ async function handleDeleteFolder(folderId?: string) {
     selectedFolderId.value = folders.value[0]?.id ?? null
     await loadFolders()
     if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
-    window.alert('删除成功')
   }
 
   confirmState.value = {
@@ -463,7 +484,11 @@ async function handleCreateAnchor() {
   if (!selectedFolderId.value) return
   const currentFolder = folders.value.find((f) => f.id === selectedFolderId.value)
   if (currentFolder && (currentFolder as any).isSystem) {
-    window.alert('系统文件夹中不能创建资料，请先选择普通文件夹')
+    infoState.value = {
+      open: true,
+      title: '提示',
+      description: '系统文件夹中不能创建资料，请先选择普通文件夹。',
+    }
     return
   }
 
@@ -630,6 +655,26 @@ function handleConfirmCancel() {
   confirmState.value = { open: false, title: '', description: '', onConfirm: null }
 }
 
+function handleInfoClose() {
+  infoState.value = { open: false, title: '', description: '' }
+}
+
+function handleOpenSettings() {
+  infoState.value = {
+    open: true,
+    title: '设置',
+    description: '设置功能敬请期待。',
+  }
+}
+
+function handleOpenAbout() {
+  infoState.value = {
+    open: true,
+    title: '关于',
+    description: 'AmberDay 桌面版，课程资料管理。',
+  }
+}
+
 async function handleConfirmOk() {
   const action = confirmState.value.onConfirm
   confirmState.value = { open: false, title: '', description: '', onConfirm: null }
@@ -786,6 +831,7 @@ onUnmounted(() => {
 
 <template>
   <div class="flex h-screen flex-col overflow-hidden bg-[#f2f2f2]">
+    <TopMenu @settings="handleOpenSettings" @about="handleOpenAbout" />
     <div class="border-b border-slate-200 bg-[#f2f2f2]">
       <FolderTabs
         :open-folders="openFolders"
@@ -1031,6 +1077,25 @@ onUnmounted(() => {
             @click="handleConfirmOk"
           >
             确认
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- 信息提示弹窗（单按钮） -->
+    <Dialog v-model:open="infoState.open">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle>{{ infoState.title }}</DialogTitle>
+          <DialogDescription>{{ infoState.description }}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            @click="handleInfoClose"
+          >
+            确定
           </button>
         </DialogFooter>
       </DialogContent>
