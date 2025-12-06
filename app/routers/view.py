@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+﻿from fastapi import APIRouter
 import webview
 
 """
@@ -12,12 +12,12 @@ router = APIRouter(prefix="/windows", tags=["windows"])
 @router.get("/setting")
 def open_setting_window():
     """
-    打开“设置”子窗口，加载前端的 /#/setting 页面（避免 history 模式刷新 404）。
+    打开“设置”子窗口，加载前端的 /setting 页面。
     """
     # 静态版
-    # default_url = "http://localhost:8000/setting"
+    # default_url = "http://localhost:8000/static/setting"
     # 开发版（如需改用前端 dev server，取消下一行注释）
-    default_url = "http://localhost:5173/setting"
+    default_url = "http://localhost:5173/static/setting"
 
     window_url = default_url
     webview.create_window("设置", url=window_url, width=900, height=640, resizable=True)

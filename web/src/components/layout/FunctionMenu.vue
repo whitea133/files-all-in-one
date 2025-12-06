@@ -1,9 +1,18 @@
 ﻿<script setup lang="ts">
+import axios from 'axios'
 import settingIcon from '@/components/icons/functionMenu/setting_icon.svg'
 
-const handleOpenSettings = () => {
-  // 预留设置入口，后续接入实际功能
-  window.alert('设置功能开发中，敬请期待')
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:8000',
+})
+
+const handleOpenSettings = async () => {
+  try {
+    await api.get('/windows/setting')
+  } catch (err) {
+    console.error('打开设置窗口失败', err)
+    window.alert('打开设置窗口失败，请检查后端服务状态')
+  }
 }
 </script>
 
