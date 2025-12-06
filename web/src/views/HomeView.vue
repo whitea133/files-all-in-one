@@ -4,6 +4,7 @@ import AnchorDetail from '@/components/anchors/AnchorDetail.vue'
 import AnchorTable from '@/components/anchors/AnchorTable.vue'
 import FolderTabs from '@/components/layout/FolderTabs.vue'
 import FolderTree from '@/components/layout/FolderTree.vue'
+import FunctionMenu from '@/components/layout/FunctionMenu.vue'
 import TagManager from '@/components/layout/TagManager.vue'
 import type { AnchorItem, TagItem, VirtualFolder } from '@/types/ui'
 import {
@@ -881,9 +882,10 @@ onUnmounted(() => {
       </main>
 
       <!-- 右侧：信息栏 -->
-      <aside class="w-[340px] min-w-[320px] max-w-[360px] border-l border-slate-200 bg-[#f2f2f2]">
+      <aside class="w-[300px] min-w-[280px] max-w-[320px] border-l border-slate-200 bg-[#f2f2f2]">
         <AnchorDetail :anchor="selectedAnchor" @untag="handleUntag" />
       </aside>
+      <FunctionMenu />
     </div>
 
     <!-- 资料锚点右键菜单 -->
