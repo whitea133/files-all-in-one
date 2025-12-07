@@ -70,8 +70,9 @@ class BackupRecord(Model):
         资料备份记录
         id: 主键
         file_anchor: 关联的资料文件锚点(外键)
-        backup_path: 备份文件路径
+        backup_path: 备份文件的实际路径（示例：D:/Backups/123/原文件-时间戳.ext，或相对于备份根目录的 123/原文件-时间戳.ext）
         backup_time: 备份时间
+        注：同一个资料锚点可以有多个备份文件，它们是按时间来划分不同版本的备份文件。
     """    
     id = fields.IntField(pk=True)
     file_anchor = fields.ForeignKeyField('models.FileAnchor', related_name='backup_records')
