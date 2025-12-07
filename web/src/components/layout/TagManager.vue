@@ -13,14 +13,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex flex-col border border-slate-300 bg-[#f2f2f2]">
+  <div class="flex h-40 flex-col border border-slate-300 bg-[#f2f2f2]">
     <div class="flex items-center justify-between px-4 py-2">
       <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
         标签
       </div>
       <span class="text-[11px] text-slate-400">点击标签以筛选</span>
     </div>
-    <div class="max-h-44 overflow-y-auto px-4 pb-4">
+    <div class="flex-1 overflow-y-auto px-4 pb-4">
       <div class="flex flex-wrap items-start gap-2">
         <button
           v-for="tag in tags"

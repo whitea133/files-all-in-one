@@ -515,7 +515,7 @@ async function handleCreateAnchor() {
     const payload = {
       name: base,
       path: filePath,
-      description: '示例描述，可通过接口更新',
+      description: '暂无描述',
       folder_id: Number(selectedFolderId.value),
     }
     await api.post('/anchors', payload)
@@ -851,7 +851,6 @@ onUnmounted(() => {
           </div>
           <div class="mt-4 shrink-0">
             <TagManager
-              class="max-h-48 overflow-y-auto"
               :tags="tags"
               :selected-tag-ids="selectedTagIds"
               @toggle="handleTagToggle"

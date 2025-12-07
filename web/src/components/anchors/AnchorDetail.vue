@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { AnchorItem } from '@/types/ui'
 
 const props = defineProps<{
@@ -30,9 +30,9 @@ const emit = defineEmits<{
       </div>
 
       <div class="space-y-1">
-        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">摘要</div>
+        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">描述</div>
         <p class="rounded-md border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-700">
-          {{ anchor.summary || '暂无摘要，可从接口或手动输入补全。' }}
+          {{ anchor.summary || '暂无描述，可从接口或手动输入补全。' }}
         </p>
       </div>
 
