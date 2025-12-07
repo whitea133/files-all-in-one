@@ -763,16 +763,18 @@ function closeTagMenu() {
 async function handleDeleteTag(id: string) {
   const target = tags.value.find((t) => t.id === id)
   const name = target?.name ?? ''
-  const ok = window.confirm(`您确定删除此标签${name ? `「${name}」` : ''}吗？\n此标签将从所有条目中移除。`)
-  if (!ok) {
-    closeTagMenu()
-    return
+  confirmState.value = {
+    open: true,
+    title: '删除标签',
+    description: `确认删除标签${name ? `「${name}」` : ''}？该标签将从所有资料锚点中移除。`,
+    onConfirm: async () => {
+      await api.delete(`/tags/${id}`)
+      await refreshTags()
+      if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
+      selectedTagIds.value = selectedTagIds.value.filter((t) => t !== id)
+      closeTagMenu()
+    },
   }
-  await api.delete(`/tags/${id}`)
-  await refreshTags()
-  if (selectedFolderId.value) await loadAnchors(selectedFolderId.value)
-  selectedTagIds.value = selectedTagIds.value.filter((t) => t !== id)
-  closeTagMenu()
 }
 
 watchEffect(() => {
