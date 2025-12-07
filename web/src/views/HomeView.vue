@@ -572,6 +572,18 @@ async function handleDeleteAnchor() {
   backups.value = []
 }
 
+async function handleRefreshAnchors() {
+  if (!selectedFolderId.value) return
+  try {
+    await api.post(`/check/${selectedFolderId.value}/anchors`)
+    await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+    await refreshTags()
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    window.alert(detail ? `刷新锚点失败：${detail}` : '刷新锚点失败，请稍后重试')
+  }
+}
+
 function openAnchorMenu(payload: { id: string; x: number; y: number }) {
   selectedAnchorId.value = payload.id
   anchorMenu.value = { visible: true, x: payload.x + 8, y: payload.y + 10, targetId: payload.id }
@@ -956,6 +968,7 @@ onUnmounted(() => {
         @create="handleCreateAnchor"
         @delete="handleDeleteAnchor"
         @context="openAnchorMenu"
+        @refresh="handleRefreshAnchors"
         @rename-commit="handleAnchorRenameCommit"
         @rename-cancel="handleAnchorRenameCancel"
         @select="(id) => (selectedAnchorId = id)"

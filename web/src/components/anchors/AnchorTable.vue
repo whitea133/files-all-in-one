@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AnchorItem } from '@/types/ui'
 import addAnchorIcon from '@/components/icons/addAnchor_icon.svg'
+import refreshIcon from '@/components/icons/refresh.svg'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -16,6 +17,7 @@ const emit = defineEmits<{
   (e: 'create'): void
   (e: 'delete'): void
   (e: 'context', payload: { id: string; x: number; y: number }): void
+  (e: 'refresh'): void
   (e: 'rename-commit', payload: { id: string; title: string }): void
   (e: 'rename-cancel'): void
   (e: 'drag-start', payload: { id: string }): void
@@ -34,6 +36,19 @@ const rowHeightStyle = computed(() => {
     <div class="flex items-center justify-between border-b border-slate-200 px-4 py-2">
       <div class="text-sm font-semibold text-slate-700">资料锚点</div>
       <div class="flex items-center gap-2 text-xs text-slate-500">
+        <button
+          class="hover:text-blue-600 cursor-pointer transition"
+          type="button"
+          title="刷新锚点"
+          @click="emit('refresh')"
+        >
+          <img
+            class="h-5 w-5 transition"
+            :class="'hover:[filter:invert(35%)_sepia(93%)_saturate(1820%)_hue-rotate(201deg)_brightness(95%)_contrast(89%)]'"
+            :src="refreshIcon"
+            alt="刷新锚点"
+          />
+        </button>
         <button
           class="hover:text-blue-600 cursor-pointer transition"
           type="button"
