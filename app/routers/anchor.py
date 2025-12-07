@@ -426,3 +426,5 @@ async def remove_tag_from_anchor(anchor_id: int, tag_id: int) -> AnchorResponse:
         virtual_folder_ids=list(folder_ids),
         tag_ids=list(tag_ids),
     )
+
+# --------------资料锚点备份相关操作--------------
