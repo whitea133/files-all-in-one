@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Button } from '@/components/ui/button'
+import { useSettingsStore } from '@/stores/settings'
 
 type SectionKey = 'basic' | 'backup' | 'other1' | 'other2'
 
@@ -15,9 +16,15 @@ const activeKey = ref<SectionKey>('basic')
 const themeChoice = ref<'light' | 'dark' | 'auto'>('light')
 const showLineNumbers = ref(true)
 const autoSave = ref(true)
-const backupPath = ref('未选择路径')
+
+const settingsStore = useSettingsStore()
+const backupPathDisplay = computed(() => settingsStore.backupPath || '未选择路径')
 
 const activeSection = computed(() => sections.find((s) => s.key === activeKey.value) ?? sections[0])
+function handlePickBackupPath() {
+  // TODO: 接入真实路径选择；当前仅预留占位
+  window.alert('请选择备份路径（功能待接入）')
+}
 </script>
 
 <template>
@@ -90,12 +97,12 @@ const activeSection = computed(() => sections.find((s) => s.key === activeKey.va
               <p class="text-sm text-slate-600">请选择备份目录（当前仅展示，不触发实际操作）。</p>
               <div class="flex items-center gap-3">
                 <input
-                  :value="backupPath"
+                  :value="backupPathDisplay"
                   type="text"
                   class="w-80 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   readonly
                 />
-                <Button type="button" size="sm" class="px-3">
+                <Button type="button" size="sm" class="px-3" @click="handlePickBackupPath">
                   选择路径
                 </Button>
               </div>

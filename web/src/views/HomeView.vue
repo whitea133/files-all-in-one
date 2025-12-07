@@ -184,6 +184,7 @@ function mapAnchor(apiAnchor: ApiAnchor, folderId: string): AnchorItem {
     title: apiAnchor.name,
     creator: '',
     type: typeFromPath(apiAnchor.path),
+    isValid: apiAnchor.is_valid,
     folderId,
     folderIds: apiAnchor.virtual_folder_ids.map((id) => String(id)),
     path: apiAnchor.path,

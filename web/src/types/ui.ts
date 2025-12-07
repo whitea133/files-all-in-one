@@ -24,6 +24,7 @@ export type AnchorItem = {
   addedAt: string
   updatedAt: string
   path?: string
+  isValid?: boolean
   tags: string[]
   summary?: string
   attachments?: number

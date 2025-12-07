@@ -65,7 +65,10 @@ const rowHeightStyle = computed(() => {
             v-for="anchor in anchors"
             :key="anchor.id"
             class="cursor-pointer transition leading-tight"
-            :class="anchor.id === selectedId ? 'selected-row bg-[#4072E5]' : 'hover:bg-slate-50'"
+            :class="[
+              anchor.id === selectedId ? 'selected-row bg-[#4072E5]' : 'hover:bg-slate-50',
+              anchor.isValid === false && anchor.id !== selectedId ? 'bg-red-50/60' : '',
+            ]"
             :style="{ height: rowHeightStyle, minHeight: rowHeightStyle }"
             @click="emit('select', anchor.id)"
             @contextmenu.prevent="emit('context', { id: anchor.id, x: $event.clientX, y: $event.clientY })"
@@ -76,12 +79,23 @@ const rowHeightStyle = computed(() => {
             <td class="max-w-[320px] px-3 py-0 align-middle">
               <div
                 v-if="props.editingId !== anchor.id"
-                :class="[
-                  'truncate whitespace-nowrap text-[13px] font-medium',
-                  anchor.id === selectedId ? 'text-white' : 'text-slate-900',
-                ]"
+                class="flex items-center gap-2"
               >
-                {{ anchor.title }}
+                <span
+                  :class="[
+                    'truncate whitespace-nowrap text-[13px] font-medium',
+                    anchor.id === selectedId ? 'text-white' : 'text-slate-900',
+                    anchor.isValid === false && anchor.id !== selectedId ? 'text-red-700' : '',
+                  ]"
+                >
+                  {{ anchor.title }}
+                </span>
+                <span
+                  v-if="anchor.isValid === false"
+                  class="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700"
+                >
+                  文件不存在
+                </span>
               </div>
               <input
                 v-else

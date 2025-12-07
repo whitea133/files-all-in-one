@@ -23,7 +23,15 @@ const emit = defineEmits<{
       </div>
 
       <div class="space-y-1">
-        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">文件路径</div>
+        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          文件路径
+          <span
+            v-if="anchor.isValid === false"
+            class="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700"
+          >
+            文件不存在
+          </span>
+        </div>
         <div class="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 break-all">
           {{ anchor.path || '暂无路径' }}
         </div>
