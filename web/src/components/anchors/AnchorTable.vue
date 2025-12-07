@@ -107,8 +107,8 @@ const rowHeightStyle = computed(() => {
             </td>
           </tr>
           <tr v-if="!anchors.length">
-            <td colspan="4" class="px-4 py-6 text-center text-slate-400">
-              暂无资料锚点，选择左侧文件夹以查看
+            <td colspan="5" class="px-4 py-10 text-center text-slate-400">
+              暂无资料锚点，点击右上角添加新资料锚点
             </td>
           </tr>
         </tbody>

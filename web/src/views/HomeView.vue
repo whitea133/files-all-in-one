@@ -815,7 +815,7 @@ onUnmounted(() => {
 
 <template>
   <div class="flex h-screen flex-col overflow-hidden bg-[#f2f2f2]">
-    <div class="border-b border-slate-200 bg-[#f2f2f2]">
+    <div class="border-y border-slate-200 bg-[#f2f2f2]">
       <FolderTabs
         :open-folders="openFolders"
         :active-folder-id="selectedFolderId"
