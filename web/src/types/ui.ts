@@ -29,3 +29,13 @@ export type AnchorItem = {
   summary?: string
   attachments?: number
 }
+
+export type BackupRecord = {
+  id: number
+  fileAnchorId: number
+  fileAnchorName: string
+  fileAnchorPath: string
+  backupPath: string
+  backupTime: string
+  fileName: string
+}

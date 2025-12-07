@@ -6,7 +6,7 @@ import FolderTabs from '@/components/layout/FolderTabs.vue'
 import FolderTree from '@/components/layout/FolderTree.vue'
 import FunctionMenu from '@/components/layout/FunctionMenu.vue'
 import TagManager from '@/components/layout/TagManager.vue'
-import type { AnchorItem, TagItem, VirtualFolder } from '@/types/ui'
+import type { AnchorItem, BackupRecord, TagItem, VirtualFolder } from '@/types/ui'
 import {
   Dialog,
   DialogContent,
@@ -54,6 +54,15 @@ type ApiTag = {
   use_count: number
 }
 
+type ApiBackup = {
+  id: number
+  file_anchor_id: number
+  file_anchor_name: string
+  file_anchor_path: string
+  backup_path: string
+  backup_time: string
+}
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:8000',
 })
@@ -66,6 +75,7 @@ const anchorRequestAbort = ref<AbortController | null>(null)
 const allowAutoSelectAnchor = ref(true)
 const recycleFolderId = ref<string | null>(null)
 const allFolderId = ref<string | null>(null)
+const backups = ref<BackupRecord[]>([])
 const draggingAnchor = ref<{ id: string; folderIds: string[] } | null>(null)
 const hoverFolderId = ref<string | null>(null)
 const folderTabMenu = ref<{ visible: boolean; x: number; y: number; targetId: string | null; index: number }>({
@@ -278,6 +288,33 @@ async function loadAnchors(folderId: string, options: { force?: boolean; autoSel
     console.error('加载锚点失败', err)
   } finally {
     closeAnchorMenu()
+  }
+}
+
+async function loadBackups(anchorId: string | null) {
+  if (!anchorId) {
+    backups.value = []
+    return
+  }
+  try {
+    const res = await api.get<ApiBackup[]>(`/backups/by-anchor/${anchorId}`)
+    const mapped = res.data
+      .map((item) => {
+        const fileName = item.backup_path.split(/[/\\]/).pop() || item.backup_path
+        return {
+          id: item.id,
+          fileAnchorId: item.file_anchor_id,
+          fileAnchorName: item.file_anchor_name,
+          fileAnchorPath: item.file_anchor_path,
+          backupPath: item.backup_path,
+          backupTime: formatDateTime(item.backup_time),
+          fileName,
+        } as BackupRecord
+      })
+    backups.value = mapped
+  } catch (err) {
+    console.error('加载备份记录失败', err)
+    backups.value = []
   }
 }
 
@@ -532,6 +569,7 @@ async function handleDeleteAnchor() {
   await refreshTags()
   if (selectedFolderId.value) await loadAnchors(selectedFolderId.value, { force: true })
   selectedAnchorId.value = null
+  backups.value = []
 }
 
 function openAnchorMenu(payload: { id: string; x: number; y: number }) {
@@ -728,6 +766,46 @@ async function handleOpenFile(anchorId: string) {
   }
 }
 
+async function handleBackupAnchor(anchorId: string) {
+  try {
+    await api.post(`/backups/${anchorId}`)
+    await loadBackups(anchorId)
+    window.alert('备份成功')
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    window.alert(detail ? `备份失败：${detail}` : '备份失败，请稍后重试')
+  } finally {
+    closeAnchorMenu()
+  }
+}
+
+async function handleRestoreBackup(backupId: number) {
+  if (!selectedAnchorId.value) return
+  try {
+    await api.post(`/backups/${backupId}/restore`)
+    await loadBackups(selectedAnchorId.value)
+    if (selectedFolderId.value) {
+      await loadAnchors(selectedFolderId.value, { force: true, autoSelect: false })
+    }
+    window.alert('已从备份恢复')
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    window.alert(detail ? `恢复失败：${detail}` : '恢复失败，请稍后重试')
+  }
+}
+
+async function handleDeleteBackup(backupId: number) {
+  if (!selectedAnchorId.value) return
+  try {
+    await api.delete(`/backups/${backupId}`)
+    await loadBackups(selectedAnchorId.value)
+    window.alert('已删除备份')
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    window.alert(detail ? `删除失败：${detail}` : '删除失败，请稍后重试')
+  }
+}
+
 function handleAnchorRenameCancel() {
   editingAnchorId.value = null
 }
@@ -782,12 +860,16 @@ watchEffect(() => {
   const current = filteredAnchors.value
   if (!current.length) {
     selectedAnchorId.value = null
+    backups.value = []
     return
   }
   if (!current.find((item) => item.id === selectedAnchorId.value)) {
     if (!allowAutoSelectAnchor.value) return
     const first = current[0]
     selectedAnchorId.value = first ? first.id : null
+  }
+  if (selectedAnchorId.value) {
+    loadBackups(selectedAnchorId.value)
   }
 })
 
@@ -866,26 +948,32 @@ onUnmounted(() => {
       <!-- 中间：资料锚点列表 -->
       <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div class="flex-1 overflow-hidden">
-          <AnchorTable
-            :anchors="filteredAnchors"
-            :selected-id="selectedAnchorId"
-            :row-height="30"
-            :editing-id="editingAnchorId"
-            @create="handleCreateAnchor"
-            @delete="handleDeleteAnchor"
-            @context="openAnchorMenu"
-            @rename-commit="handleAnchorRenameCommit"
-            @rename-cancel="handleAnchorRenameCancel"
-            @select="(id) => (selectedAnchorId = id)"
-            @drag-start="handleAnchorDragStart"
-            @drag-end="handleAnchorDragEnd"
-          />
+      <AnchorTable
+        :anchors="filteredAnchors"
+        :selected-id="selectedAnchorId"
+        :row-height="30"
+        :editing-id="editingAnchorId"
+        @create="handleCreateAnchor"
+        @delete="handleDeleteAnchor"
+        @context="openAnchorMenu"
+        @rename-commit="handleAnchorRenameCommit"
+        @rename-cancel="handleAnchorRenameCancel"
+        @select="(id) => (selectedAnchorId = id)"
+        @drag-start="handleAnchorDragStart"
+        @drag-end="handleAnchorDragEnd"
+      />
         </div>
       </main>
 
       <!-- 右侧：信息栏 -->
       <aside class="w-[300px] min-w-[280px] max-w-[320px] border-l border-slate-200 bg-[#f2f2f2]">
-        <AnchorDetail :anchor="selectedAnchor" @untag="handleUntag" />
+        <AnchorDetail
+          :anchor="selectedAnchor"
+          :backups="backups"
+          @untag="handleUntag"
+          @restore-backup="handleRestoreBackup"
+          @delete-backup="handleDeleteBackup"
+        />
       </aside>
       <FunctionMenu />
     </div>
@@ -920,6 +1008,13 @@ onUnmounted(() => {
           @click="anchorMenu.targetId && handleOpenFile(anchorMenu.targetId)"
         >
           打开文件
+        </button>
+        <button
+          class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          type="button"
+          @click="anchorMenu.targetId && handleBackupAnchor(anchorMenu.targetId)"
+        >
+          备份锚点
         </button>
         <button
           class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"

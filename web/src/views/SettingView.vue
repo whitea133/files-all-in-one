@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { useSettingsStore } from '@/stores/settings'
 
@@ -21,10 +21,21 @@ const settingsStore = useSettingsStore()
 const backupPathDisplay = computed(() => settingsStore.backupPath || '未选择路径')
 
 const activeSection = computed(() => sections.find((s) => s.key === activeKey.value) ?? sections[0])
-function handlePickBackupPath() {
-  // TODO: 接入真实路径选择；当前仅预留占位
-  window.alert('请选择备份路径（功能待接入）')
+
+async function handlePickBackupPath() {
+  try {
+    await settingsStore.selectBackupPath()
+  } catch (err: any) {
+    const msg = err?.response?.data?.detail || err?.message || '选择路径失败，请重试'
+    window.alert(msg)
+  }
 }
+
+onMounted(() => {
+  settingsStore.loadBackupPath().catch(() => {
+    /* ignore */
+  })
+})
 </script>
 
 <template>

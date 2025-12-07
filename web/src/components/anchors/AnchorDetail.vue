@@ -3,10 +3,13 @@ import type { AnchorItem } from '@/types/ui'
 
 const props = defineProps<{
   anchor: AnchorItem | null
+  backups?: import('@/types/ui').BackupRecord[]
 }>()
 
 const emit = defineEmits<{
   (e: 'untag', tag: string): void
+  (e: 'restore-backup', id: number): void
+  (e: 'delete-backup', id: number): void
 }>()
 </script>
 
@@ -66,9 +69,37 @@ const emit = defineEmits<{
       </div>
 
       <div class="space-y-1">
-        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">附件</div>
-        <div class="rounded-md border border-dashed border-slate-200 bg-white p-3 text-sm text-slate-600">
-          {{ anchor.attachments ? `已有 ${anchor.attachments} 个附件` : '暂无附件' }}
+        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">备份文件</div>
+        <div class="rounded-md border border-dashed border-slate-200 bg-white p-3 text-sm text-slate-700 space-y-2">
+          <template v-if="props.backups?.length">
+            <div
+              v-for="item in props.backups"
+              :key="item.id"
+              class="flex items-center justify-between gap-3 rounded border border-slate-100 px-3 py-2 text-[13px]"
+            >
+              <div class="min-w-0">
+                <div class="truncate text-[13px] font-medium text-slate-800">{{ item.fileName }}</div>
+                <div class="text-[12px] text-slate-500">{{ item.backupTime }}</div>
+              </div>
+              <div class="flex items-center gap-1.5 text-[12px]">
+                <button
+                  class="shrink-0 rounded-md border border-slate-300 px-2.5 py-1 text-[12px] text-slate-700 hover:bg-slate-50"
+                  type="button"
+                  @click="emit('restore-backup', item.id)"
+                >
+                  恢复
+                </button>
+                <button
+                  class="shrink-0 rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-[12px] text-red-600 hover:bg-red-100"
+                  type="button"
+                  @click="emit('delete-backup', item.id)"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          </template>
+          <p v-else class="text-sm text-slate-500">暂无备份文件</p>
         </div>
       </div>
     </div>
