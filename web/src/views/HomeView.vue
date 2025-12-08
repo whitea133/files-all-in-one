@@ -924,7 +924,7 @@ onUnmounted(() => {
 
     <div class="flex flex-1 min-h-0 overflow-hidden">
       <!-- 左侧：虚拟文件夹 + 标签 -->
-      <aside class="flex h-full w-64 min-w-[240px] max-w-[260px] flex-col border-r border-slate-200 bg-[#f2f2f2] min-h-0 overflow-hidden">
+      <aside class="flex h-full w-56 min-w-[200px] max-w-[230px] flex-col border-r border-slate-200 bg-[#f2f2f2] min-h-0 overflow-hidden">
         <div class="flex h-full flex-col p-4">
           <div class="flex-1 min-h-0">
             <FolderTree
@@ -957,8 +957,8 @@ onUnmounted(() => {
         </div>
       </aside>
 
-      <!-- 中间：资料锚点列表 -->
-      <main class="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <!-- 中间：资料锚点列表（允许收缩并可水平滚动，避免被右侧信息栏覆盖） -->
+      <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div class="flex-1 overflow-hidden">
       <AnchorTable
         :anchors="filteredAnchors"
@@ -979,7 +979,7 @@ onUnmounted(() => {
       </main>
 
       <!-- 右侧：信息栏 -->
-      <aside class="w-[300px] min-w-[280px] max-w-[320px] border-l border-slate-200 bg-[#f2f2f2]">
+      <aside class="w-[300px] min-w-[280px] max-w-[320px] shrink-0 border-l border-slate-200 bg-[#f2f2f2]">
         <AnchorDetail
           :anchor="selectedAnchor"
           :backups="backups"
