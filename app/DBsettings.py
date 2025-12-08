@@ -4,7 +4,7 @@ Tortoise ORM 配置模块
 
 TORTOISE_ORM = {
     "connections": {
-        "default": "sqlite://amberday.db"  # 如果还要再接别的库，再写一行即可
+        "default": "sqlite://Faio.db"  # 如果还要再接别的库，再写一行即可
     },
     "apps": {
         "models": {
