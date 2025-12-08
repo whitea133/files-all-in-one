@@ -2,6 +2,14 @@
 import type { AnchorItem } from '@/types/ui'
 import addAnchorIcon from '@/components/icons/addAnchor_icon.svg'
 import refreshIcon from '@/components/icons/refresh.svg'
+import deleteAnchorIcon from '@/components/icons/DeleteAnchor_icon.svg'
+import iconDoc from '@/components/icons/anchorType/anchor-type-doc.svg'
+import iconDocx from '@/components/icons/anchorType/anchor-type-docx.svg'
+import iconPpt from '@/components/icons/anchorType/anchor-type-ppt.svg'
+import iconPdf from '@/components/icons/anchorType/anchor-type-pdf.svg'
+import iconTxt from '@/components/icons/anchorType/anchor-type-txt.svg'
+import iconPhoto from '@/components/icons/anchorType/anchor-type-photo.svg'
+import iconApps from '@/components/icons/anchorType/anchor-type-apps.svg'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -29,6 +37,38 @@ const rowHeightStyle = computed(() => {
   if (typeof props.rowHeight === 'number') return `${props.rowHeight}px`
   return props.rowHeight || '32px'
 })
+
+const iconByType = (type: string | null | undefined) => {
+  const t = (type || '').toLowerCase()
+  if (['docx'].includes(t)) return iconDocx
+  if (['doc'].includes(t)) return iconDoc
+  if (['ppt', 'pptx', 'pps', 'ppsx'].includes(t)) return iconPpt
+  if (['pdf'].includes(t)) return iconPdf
+  if (['txt', 'md', 'markdown'].includes(t)) return iconTxt
+  if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'heic', 'heif'].includes(t)) return iconPhoto
+  return iconApps
+}
+
+// 每种类型单独着色，使用滤镜不改 SVG 源文件
+const iconTintByType = (type: string | null | undefined) => {
+  const t = (type || '').toLowerCase()
+  if (['docx'].includes(t)) return 'invert(35%) sepia(93%) saturate(1820%) hue-rotate(201deg) brightness(95%) contrast(89%)' // 蓝
+  if (['doc'].includes(t)) return 'invert(39%) sepia(21%) saturate(1452%) hue-rotate(179deg) brightness(93%) contrast(91%)' // 靛蓝
+  if (['ppt', 'pptx', 'pps', 'ppsx'].includes(t))
+    return 'invert(55%) sepia(85%) saturate(1522%) hue-rotate(357deg) brightness(98%) contrast(93%)' // 橙
+  if (['pdf'].includes(t)) return 'invert(27%) sepia(72%) saturate(3162%) hue-rotate(343deg) brightness(91%) contrast(94%)' // 红
+  if (['txt', 'md', 'markdown'].includes(t))
+    return 'invert(33%) sepia(4%) saturate(329%) hue-rotate(175deg) brightness(96%) contrast(87%)' // 灰蓝
+  if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'heic', 'heif'].includes(t))
+    return 'invert(51%) sepia(93%) saturate(566%) hue-rotate(121deg) brightness(93%) contrast(92%)' // 绿色
+  return 'invert(55%) sepia(85%) saturate(1522%) hue-rotate(357deg) brightness(98%) contrast(93%)' // 默认橙（apps 及其他）
+}
+
+const iconTint = (anchor: AnchorItem) => {
+  const isActive = props.selectedId === anchor.id || props.editingId === anchor.id
+  if (isActive) return 'invert(100%) brightness(200%)'
+  return iconTintByType(anchor.type)
+}
 </script>
 
 <template>
@@ -60,6 +100,20 @@ const rowHeightStyle = computed(() => {
             :class="'hover:[filter:invert(35%)_sepia(93%)_saturate(1820%)_hue-rotate(201deg)_brightness(95%)_contrast(89%)]'"
             :src="addAnchorIcon"
             alt="创建锚点"
+          />
+        </button>
+        <button
+          class="hover:text-blue-600 cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed"
+          type="button"
+          title="删除选中锚点"
+          :disabled="!selectedId"
+          @click="emit('delete')"
+        >
+          <img
+            class="h-5 w-5 transition"
+            :class="'hover:[filter:invert(35%)_sepia(93%)_saturate(1820%)_hue-rotate(201deg)_brightness(95%)_contrast(89%)]'"
+            :src="deleteAnchorIcon"
+            alt="删除锚点"
           />
         </button>
       </div>
@@ -96,6 +150,12 @@ const rowHeightStyle = computed(() => {
                 v-if="props.editingId !== anchor.id"
                 class="flex items-center gap-2"
               >
+                <img
+                  class="h-4.5 w-4.5 shrink-0"
+                  :src="iconByType(anchor.type)"
+                  :alt="anchor.type || 'file'"
+                  :style="{ filter: iconTint(anchor) }"
+                />
                 <span
                   :class="[
                     'truncate whitespace-nowrap text-[13px] font-medium',

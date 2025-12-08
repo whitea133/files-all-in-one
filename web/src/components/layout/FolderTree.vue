@@ -126,17 +126,19 @@ onUnmounted(() => {
         class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
       />
     </div>
-    <div class="mt-2 flex-1 overflow-y-auto rounded-md border border-slate-300">
+    <div class="mt-2 flex-1 overflow-y-auto rounded-md border border-slate-300 p-1 space-y-1">
       <button
         v-for="folder in visibleFolders"
         :key="folder.id"
-        class="group flex w-full items-center gap-3 px-3 py-1.5 text-left text-[13px] leading-5 transition rounded-md min-h-[32px] border border-transparent"
+        class="group flex w-full items-center gap-2 px-2 py-1.5 text-left text-[13px] leading-5 transition rounded-md min-h-[32px] border border-transparent min-w-0"
         :class="[
-          folder.id === selectedId ? 'bg-[#4072E5] text-white' : 'text-slate-800 hover:bg-slate-50',
-          hoverFolderId === folder.id && !isDropDisabled(folder)
-            ? 'bg-blue-50 ring-2 ring-blue-300 ring-offset-0 border-blue-200'
+          props.editingId === folder.id || folder.id === selectedId
+            ? 'bg-[#4072E5] text-white border border-[#2f5cd7] shadow-[0_0_0_1px_rgba(47,92,215,0.35)]'
+            : 'text-slate-800 hover:bg-slate-50',
+          props.editingId !== folder.id && hoverFolderId === folder.id && !isDropDisabled(folder)
+            ? 'bg-blue-50 border border-blue-200 shadow-[0_0_0_2px_rgba(59,130,246,0.25)]'
             : '',
-          draggingAnchor && !isDropDisabled(folder) ? 'border-blue-200' : '',
+          props.editingId !== folder.id && draggingAnchor && !isDropDisabled(folder) ? 'border-blue-200' : '',
           isDropDisabled(folder) && draggingAnchor ? 'cursor-not-allowed opacity-60 grayscale' : '',
         ]"
         type="button"
@@ -152,10 +154,10 @@ onUnmounted(() => {
           :src="folder.icon === 'recycle' ? recycleIcon : folder.icon === 'library' ? libraryIcon : folderIcon"
           alt=""
         />
-        <span v-if="props.editingId !== folder.id" class="flex-1 truncate">{{ folder.name }}</span>
+        <span v-if="props.editingId !== folder.id" class="flex-1 truncate min-w-0">{{ folder.name }}</span>
         <input
           v-else
-          class="folder-rename-input flex-1 truncate rounded border border-blue-300 px-2 py-1 text-sm outline-none"
+          class="folder-rename-input w-full truncate rounded border border-white/70 bg-[#4072E5] px-2 py-1 text-sm outline-none text-white placeholder-white/80"
           :value="folder.name"
           autofocus
           @keydown.enter.stop.prevent="emit('rename-commit', { id: folder.id, name: ($event.target as HTMLInputElement).value })"

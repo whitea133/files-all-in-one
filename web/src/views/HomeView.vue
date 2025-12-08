@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
 declare global {
   interface Window {
@@ -489,6 +489,13 @@ function handleFolderRenameCancel() {
 
 function handleRenameFolder(folderId: string) {
   editingFolderId.value = folderId
+  nextTick(() => {
+    const input = document.querySelector('.folder-rename-input') as HTMLInputElement | null
+    if (input) {
+      input.focus()
+      input.select()
+    }
+  })
 }
 
 async function handleDeleteFolder(folderId?: string) {
