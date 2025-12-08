@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 
 from models import FileAnchor, Tag, VirtualFolder
+from utils.operation_log import log_operation
 from routers.anchor import AnchorResponse
 
 router = APIRouter(prefix="/tags", tags=["tags"])
@@ -43,6 +44,8 @@ async def delete_tag(tag_id: int) -> None:
 
     await tag.file_anchors.clear()
     await tag.delete()
+
+    await log_operation("删除标签", f"tag_id={tag_id}")
 
 
 @router.get("/anchors", response_model=list[AnchorResponse])

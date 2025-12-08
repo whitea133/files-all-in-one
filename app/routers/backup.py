@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
 from models import BackupRecord, FileAnchor
+from utils.operation_log import log_operation
 
 
 router = APIRouter(prefix="/backups", tags=["backups"])
@@ -100,6 +101,8 @@ async def backup_anchor(anchor_id: int) -> BackupRecordResponse:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"备份失败: {exc}")
 
     rec = await BackupRecord.create(file_anchor=anchor, backup_path=str(dest_path))
+
+    await log_operation("创建备份", f"anchor_id={anchor.id};backup_id={rec.id}")
     return BackupRecordResponse.from_model(rec)
 
 
@@ -129,6 +132,8 @@ async def restore_backup(backup_id: int) -> BackupRecordResponse:
 
     # 刷新记录以返回最新 anchor 信息
     await rec.fetch_related("file_anchor")
+
+    await log_operation("恢复备份", f"backup_id={backup_id};anchor_id={anchor.id}")
     return BackupRecordResponse.from_model(rec)
 
 
@@ -147,3 +152,5 @@ async def delete_backup(backup_id: int) -> None:
         pass
 
     await rec.delete()
+
+    await log_operation("删除备份", f"backup_id={backup_id}")

@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from tortoise.exceptions import IntegrityError
 
 from models import FileAnchor, Tag, VirtualFolder
+from utils.operation_log import log_operation
 from routers.anchor import AnchorResponse
 
 
@@ -66,6 +67,8 @@ async def create_virtual_folder(payload: VirtualFolderCreate) -> VirtualFolderRe
         # 并发场景下的重复创建保护
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="虚拟文件夹已存在")
 
+    await log_operation("创建虚拟文件夹", f"folder_id={folder.id}")
+
     return folder
 
 
@@ -92,6 +95,8 @@ async def rename_virtual_folder(folder_id: int, payload: VirtualFolderUpdate) ->
     except IntegrityError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="虚拟文件夹名称已存在")
 
+    await log_operation("重命名虚拟文件夹", f"folder_id={folder.id}")
+
     return folder
 
 
@@ -107,6 +112,7 @@ async def delete_virtual_folder(folder_id: int) -> None:
     if folder.is_system:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="系统虚拟文件夹不可删除")
 
+    await log_operation("删除虚拟文件夹", f"folder_id={folder.id}")
     await folder.delete()
 
 # -----------虚拟文件夹与资料锚点相关操作-----------
@@ -159,3 +165,5 @@ async def empty_recycle_bin() -> None:
                 tag.use_count -= 1
                 await tag.save()
         await anchor.delete()
+
+    await log_operation("清空回收站", f"recycle_folder_id={recycle_folder.id}")

@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from models import FileAnchor, Tag, VirtualFolder
+from utils.operation_log import log_operation
 
 
 router = APIRouter(prefix="/anchors", tags=["file-anchors"])
@@ -67,6 +68,8 @@ async def create_anchor(payload: AnchorCreate) -> AnchorResponse:
 
     bound_folder_ids = [all_folder.id, target_folder.id]
 
+    await log_operation("创建资料锚点", f"anchor_id={anchor.id}")
+
     return AnchorResponse(
         id=anchor.id,
         name=anchor.name,
@@ -108,6 +111,8 @@ async def move_anchor_to_recycle(anchor_id: int) -> AnchorResponse:
     await anchor.tags.clear()
     await anchor.refresh_from_db()
 
+    await log_operation("移入回收站", f"anchor_id={anchor.id}")
+
     return AnchorResponse(
         id=anchor.id,
         name=anchor.name,
@@ -148,6 +153,8 @@ async def restore_anchor(anchor_id: int) -> AnchorResponse:
     await anchor.virtual_folders.clear()
     await anchor.virtual_folders.add(all_folder)
     await anchor.refresh_from_db()
+
+    await log_operation("恢复资料锚点", f"anchor_id={anchor.id}")
 
     return AnchorResponse(
         id=anchor.id,
@@ -205,6 +212,8 @@ async def bind_anchor_folders(anchor_id: int, payload: AnchorBindFolders) -> Anc
     await anchor.refresh_from_db()
     bound_folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
+
+    await log_operation("绑定锚点文件夹", f"anchor_id={anchor.id};folders={','.join(map(str, bound_folder_ids))}")
 
     return AnchorResponse(
         id=anchor.id,
@@ -264,6 +273,8 @@ async def update_anchor(anchor_id: int, payload: AnchorUpdate) -> AnchorResponse
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
 
+    await log_operation("更新锚点信息", f"anchor_id={anchor.id}")
+
     return AnchorResponse(
         id=anchor.id,
         name=anchor.name,
@@ -293,6 +304,8 @@ async def rename_anchor(anchor_id: int, payload: AnchorRename) -> AnchorResponse
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
 
+    await log_operation("更新锚点信息", f"anchor_id={anchor.id}")
+
     return AnchorResponse(
         id=anchor.id,
         name=anchor.name,
@@ -321,6 +334,8 @@ async def update_anchor_description(anchor_id: int, payload: AnchorUpdateDescrip
 
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
+
+    await log_operation("更新锚点信息", f"anchor_id={anchor.id}")
 
     return AnchorResponse(
         id=anchor.id,
@@ -375,6 +390,8 @@ async def add_tags_to_anchor(anchor_id: int, payload: AnchorAddTags) -> AnchorRe
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
 
+    await log_operation("添加锚点标签", f"anchor_id={anchor.id};tags={','.join(map(str, tag_ids))}")
+
     return AnchorResponse(
         id=anchor.id,
         name=anchor.name,
@@ -414,6 +431,8 @@ async def remove_tag_from_anchor(anchor_id: int, tag_id: int) -> AnchorResponse:
 
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
+
+    await log_operation("移除锚点标签", f"anchor_id={anchor.id};tag_id={tag_id}")
 
     return AnchorResponse(
         id=anchor.id,

@@ -1,6 +1,8 @@
 # git
 .git/
 
+# root files
+
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -23,6 +25,7 @@ app/wheels/
 app/*.egg-info
 app/.venv/
 app/*.spec
+app/AGENTS.md
 
 # Web-specific ignores
 web/node_modules/
