@@ -16,9 +16,9 @@ def open_setting_window():
     打开“设置”子窗口，加载前端的 /setting 页面。
     """
     # 静态版
-    default_url = "http://localhost:8000/setting"
+    # default_url = "http://localhost:8000/setting"
     # 开发版（如需改用前端 dev server，取消下一行注释）
-    # default_url = "http://localhost:5173/static/setting"
+    default_url = "http://localhost:5173/static/setting"
 
     window_url = default_url
 
@@ -31,7 +31,7 @@ def open_setting_window():
             pass
         return {"status": "ok", "url": window_url, "existing": True}
 
-    _setting_window = webview.create_window("设置", url=window_url, width=600, height=640, x=500, y=150,
+    _setting_window = webview.create_window("设置", url=window_url, width=900, height=740, x=450, y=120,
                                             resizable=False, on_top=True)
     print("窗口位置: ", webview.screens[0])
 

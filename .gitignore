@@ -30,3 +30,4 @@ app/AGENTS.md
 # Web-specific ignores
 web/node_modules/
 webdist/
+web/AGENTS.md
