@@ -16,7 +16,7 @@ router = APIRouter(prefix="/backups", tags=["backups"])
 
 
 def _settings_file() -> Path:
-    root = Path(os.getenv("LOCALAPPDATA", Path.home())) / "AmberDay_Data"
+    root = Path(os.getenv("LOCALAPPDATA", Path.home())) / "FAIO_Data"
     root.mkdir(parents=True, exist_ok=True)
     return root / "settings.toml"
 

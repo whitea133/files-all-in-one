@@ -15,7 +15,7 @@ from desktop.topMenu import topMenu
 from desktop.bridge import Bridge
 
 
-DEFAULT_TITLE = "AmberDay"
+DEFAULT_TITLE = "FAIO"
 DEFAULT_DEV_FRONTEND = "http://localhost:5173"
 
 
@@ -57,7 +57,7 @@ class Client:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run AmberDay desktop app")
+    parser = argparse.ArgumentParser(description="Run FAIO desktop app")
     parser.add_argument("--server", action="store_true", help="Only start backend server")
     parser.add_argument("--host", default="0.0.0.0", help="Backend listen address")
     parser.add_argument("--port", type=int, default=8000, help="Backend listen port")
