@@ -533,7 +533,7 @@ async function handleCreateAnchor() {
     infoState.value = {
       open: true,
       title: '提示',
-      description: '系统文件夹中不能创建资料，请先选择普通文件夹。',
+      description: '系统文件夹中不能创建资料，请先创建虚拟文件夹或选择其他文件夹。',
     }
     return
   }

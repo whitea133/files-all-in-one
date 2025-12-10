@@ -160,20 +160,23 @@ function toNextLogPage() {
         <div class="mt-8 space-y-8">
           <template v-if="activeSection?.key === 'basic'">
             <section class="space-y-4">
+              <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                基础设置功能暂未开放，备份设置与日志记录已实现。
+              </div>
               <h3 class="text-base font-semibold text-slate-800">外观</h3>
               <div class="space-y-2">
                 <div class="text-sm font-medium text-slate-700">背景颜色</div>
-                <div class="flex gap-6 text-sm text-slate-700">
-                  <label class="flex cursor-pointer items-center gap-2">
-                    <input v-model="themeChoice" type="radio" value="light" class="h-4 w-4 text-blue-600" />
+                <div class="flex gap-6 text-sm text-slate-700 opacity-60">
+                  <label class="flex cursor-not-allowed items-center gap-2">
+                    <input disabled v-model="themeChoice" type="radio" value="light" class="h-4 w-4 text-blue-600" />
                     浅色
                   </label>
-                  <label class="flex cursor-pointer items-center gap-2">
-                    <input v-model="themeChoice" type="radio" value="dark" class="h-4 w-4 text-blue-600" />
+                  <label class="flex cursor-not-allowed items-center gap-2">
+                    <input disabled v-model="themeChoice" type="radio" value="dark" class="h-4 w-4 text-blue-600" />
                     深色
                   </label>
-                  <label class="flex cursor-pointer items-center gap-2">
-                    <input v-model="themeChoice" type="radio" value="auto" class="h-4 w-4 text-blue-600" />
+                  <label class="flex cursor-not-allowed items-center gap-2">
+                    <input disabled v-model="themeChoice" type="radio" value="auto" class="h-4 w-4 text-blue-600" />
                     跟随系统
                   </label>
                 </div>
@@ -181,12 +184,12 @@ function toNextLogPage() {
 
               <div class="space-y-2">
                 <div class="text-sm font-medium text-slate-700">编辑体验</div>
-                <label class="flex items-center gap-2 text-sm text-slate-700">
-                  <input v-model="showLineNumbers" type="checkbox" class="h-4 w-4 text-blue-600" />
+                <label class="flex items-center gap-2 text-sm text-slate-700 opacity-60">
+                  <input disabled v-model="showLineNumbers" type="checkbox" class="h-4 w-4 text-blue-600" />
                   显示行号
                 </label>
-                <label class="flex items-center gap-2 text-sm text-slate-700">
-                  <input v-model="autoSave" type="checkbox" class="h-4 w-4 text-blue-600" />
+                <label class="flex items-center gap-2 text-sm text-slate-700 opacity-60">
+                  <input disabled v-model="autoSave" type="checkbox" class="h-4 w-4 text-blue-600" />
                   自动保存
                 </label>
               </div>
