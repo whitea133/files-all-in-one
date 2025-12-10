@@ -7,11 +7,7 @@
 用于整理、标注、备份本地文件的跨平台工具。通过虚拟文件夹、标签、备份与操作日志，一键打开原文件或所在目录；解决桌面文件夹与快捷方式过多导致混乱、效率下降的问题。当前处于测试阶段，会持续迭代。
 
 ### 演示
-<p align="center">
-  <video src="display/演示视频1.mp4" controls width="480">
-    您的浏览器不支持视频标签。
-  </video>
-</p>
+https://github.com/user-attachments/assets/5c380b35-89d0-425d-9ea7-a8f9fa564e86
 
 
 <p align="center">
