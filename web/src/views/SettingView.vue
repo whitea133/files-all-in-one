@@ -40,6 +40,18 @@ const logs = ref<OperatorLog[]>([])
 const logsLoading = ref(false)
 const logsError = ref('')
 const hasFetchedLogs = ref(false)
+const currentLogPage = ref(1)
+const pageSize = 10
+
+const totalLogPages = computed(() => {
+  if (!logs.value.length) return 1
+  return Math.max(1, Math.ceil(logs.value.length / pageSize))
+})
+
+const pagedLogs = computed(() => {
+  const start = (currentLogPage.value - 1) * pageSize
+  return logs.value.slice(start, start + pageSize)
+})
 
 function formatDateTime(value: string | Date | null | undefined): string {
   if (!value) return ''
@@ -62,6 +74,7 @@ async function fetchLogs() {
     const res = await api.get<OperatorLog[]>('/logs/')
     logs.value = res.data
     hasFetchedLogs.value = true
+    currentLogPage.value = 1
   } catch (err: any) {
     logsError.value = err?.response?.data?.detail || err?.message || '获取日志失败，请稍后重试'
   } finally {
@@ -95,6 +108,21 @@ watch(
     }
   },
 )
+
+watch(
+  () => logs.value.length,
+  () => {
+    currentLogPage.value = 1
+  },
+)
+
+function toPrevLogPage() {
+  if (currentLogPage.value > 1) currentLogPage.value -= 1
+}
+
+function toNextLogPage() {
+  if (currentLogPage.value < totalLogPages.value) currentLogPage.value += 1
+}
 </script>
 
 <template>
@@ -225,21 +253,39 @@ watch(
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="item in logs" :key="item.id" class="odd:bg-white even:bg-slate-50">
+                    <tr v-for="item in pagedLogs" :key="item.id" class="odd:bg-white even:bg-slate-50">
                       <td class="align-top px-4 py-3 font-mono text-xs text-slate-600">
                         {{ formatDateTime(item.time) }}
                       </td>
                       <td class="align-top px-4 py-3 text-xs">
                         <div class="font-medium text-slate-800">{{ item.operator_type_name || '未分类' }}</div>
                       </td>
-                      <td class="align-top px-4 py-3 text-sm text-slate-800">
-                        <div class="whitespace-pre-wrap leading-relaxed">
-                          {{ item.result }}
-                        </div>
-                      </td>
+                    <td class="align-top px-4 py-3 text-xs text-slate-800">
+                      <div class="whitespace-pre-wrap leading-relaxed">
+                        {{ item.result }}
+                      </div>
+                    </td>
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              <div v-if="logs.length" class="flex items-center justify-end gap-3 pt-3 text-sm text-slate-600">
+                <span>第 {{ currentLogPage }} / {{ totalLogPages }} 页</span>
+                <div class="flex items-center gap-2">
+                  <Button type="button" size="sm" variant="outline" :disabled="currentLogPage === 1" @click="toPrevLogPage">
+                    上一页
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    :disabled="currentLogPage === totalLogPages"
+                    @click="toNextLogPage"
+                  >
+                    下一页
+                  </Button>
+                </div>
               </div>
             </section>
           </template>

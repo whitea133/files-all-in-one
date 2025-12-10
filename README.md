@@ -1,45 +1,32 @@
-# Pywebview-Vue-FastApi项目模板
+# Faio (Files All in One)
 
-## 1. 项目结构
+<p align="center">
+  <img src="app/icon/Favicon.png" alt="Faio logo" width="180" />
+</p>
 
-```
-.
-|-- app                      # FastAPI 后端与 pywebview 启动入口
-|   |-- main.py              # 桌面端入口，启动 uvicorn 与 webview
-|   |-- app.py               # FastAPI 应用、静态资源挂载与路由自动注册
-|   |-- routers/             # API 路由模块（示例 test.py）
-|   |-- static/              # 前端打包后的静态资源（index.html 与 assets）
-|   |-- desktop/             # 桌面端相关适配代码占位
-|   |-- pyproject.toml
-|   `-- uv.lock
-|
-|-- web                      # Vue 3 + Vite + Tailwind 前端源码
-|   |-- src/
-|   |   |-- main.ts, App.vue
-|   |   |-- router/          # 前端路由
-|   |   |-- stores/          # 状态管理示例
-|   |   |-- views/           # 页面组件
-|   |   `-- components/      # 通用组件（含图标、UI）
-|   |-- public/
-|   |-- package.json, package-lock.json, vite.config.ts
-|   `-- README.md
-|
-|-- webdist                  # 前端构建产物（供静态模式加载）
-|-- tests/                   # 后端测试
-|   `-- test.py
-`-- README.md
-```
+用于整理、标注、备份本地文件的跨平台工具。通过虚拟文件夹、标签、备份与操作日志，一键打开原文件或所在目录，让分散资料有序可查；解决桌面文件夹与快捷方式过多导致混乱、效率下降的问题。当前处于**测试阶段**，会持续迭代。
 
-## 2. 安装前端环境(已经配置了TailwindCss样式 与Shadcn组件)
-```
-cd web
-npm install
-npm run dev -- 启动前端项目
-```
+### 平台优先级
+1. Windows 桌面
+2. macOS / Linux（待适配）
 
-## 3. 安装后端环境
-```
-cd app
-uv sync
-uv run main.py -- 启动后端项目
-```
+### 功能
+- 虚拟文件夹：创建/重命名/删除，拖拽绑定锚点，回收站。
+- 资料锚点：注册任意文件，标签、描述、重命名、快捷删除。
+- 本地直达：右键打开文件或所在目录（pywebview 桥接）。
+- 备份与恢复：单锚点备份、恢复、删除备份记录，支持自定义备份路径。
+- 标签与搜索：标签筛选、关键词搜索快速定位。
+- 操作日志：设置页查看后端操作日志，分页（10 条/页），可刷新。
+- 类型图标：根据文件类型显示对应图标（doc/docx/ppt/pdf/txt/photo/其他）。
+
+### 获取与使用
+- 在 GitHub Releases 下载可执行程序，下载后直接运行。
+- 右键资料锚点：打开文件 / 打开所在目录 / 备份 / 重命名 / 添加标签 / 删除；设置页可查看操作日志。
+
+### 说明与限制
+- 仅管理本地文件，不提供第三方数据源。
+- 所有文件操作基于数据库映射，不直接操作任意本地文件，避免误删或数据丢失。
+- 本地文件读写需遵守系统/组织安全策略，权限由用户自行承担。
+
+### 许可证
+MIT or Apache-2.0

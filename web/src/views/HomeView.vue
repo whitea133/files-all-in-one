@@ -23,6 +23,7 @@ declare global {
       api?: {
         open_file_dialog?: (folder_id?: number) => Promise<{ files: string[]; folder_id?: number; error?: string }>
         open_file?: (path: string) => Promise<{ success?: boolean; error?: string }>
+        open_file_location?: (path: string) => Promise<{ success?: boolean; error?: string }>
       }
     }
   }
@@ -785,6 +786,30 @@ async function handleOpenFile(anchorId: string) {
   }
 }
 
+async function handleOpenFileLocation(anchorId: string) {
+  const target = anchors.value.find((a) => a.id === anchorId)
+  if (!target?.path) {
+    window.alert('未找到可定位的文件路径')
+    return
+  }
+  const opener = window.pywebview?.api?.open_file_location
+  if (!opener) {
+    window.alert('当前环境不支持定位本地文件所在目录')
+    return
+  }
+  try {
+    const res = await opener(target.path)
+    if (!res?.success) {
+      window.alert(`打开所在目录失败：${res?.error ?? '未知原因'}`)
+    }
+  } catch (err) {
+    console.error('打开所在目录失败', err)
+    window.alert('打开所在目录失败，请检查路径或权限')
+  } finally {
+    closeAnchorMenu()
+  }
+}
+
 async function handleBackupAnchor(anchorId: string) {
   try {
     await api.post(`/backups/${anchorId}`)
@@ -1028,6 +1053,13 @@ onUnmounted(() => {
           @click="anchorMenu.targetId && handleOpenFile(anchorMenu.targetId)"
         >
           打开文件
+        </button>
+        <button
+          class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          type="button"
+          @click="anchorMenu.targetId && handleOpenFileLocation(anchorMenu.targetId)"
+        >
+          打开所在目录
         </button>
         <button
           class="flex w-full items-center px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"

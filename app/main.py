@@ -15,7 +15,7 @@ from desktop.topMenu import topMenu
 from desktop.bridge import Bridge
 
 
-DEFAULT_TITLE = "FAIO"
+DEFAULT_TITLE = "Faio"
 DEFAULT_DEV_FRONTEND = "http://localhost:5173"
 
 

@@ -2,9 +2,11 @@
 .git/
 
 # root files
+/snapshots/
 
 # Python-generated files
 __pycache__/
+.ruff_cache/
 *.py[oc]
 build/
 dist/
@@ -20,7 +22,9 @@ app/__pycache__/
 app/*.py[oc]
 app/build/
 app/dist/
-app/static/
+app/static/assets/
+app/static/index.html
+app/static/favicon.ico
 app/wheels/
 app/*.egg-info
 app/.venv/

@@ -16,6 +16,7 @@ class Bridge:
     提供给前端调用的 JS API。
     - open_file_dialog: 调起系统文件选择器，返回选中的文件路径列表。
     - open_file: 使用系统默认程序打开文件。
+    - open_file_location: 在文件管理器中打开文件所在目录（如支持则选中文件）。
     """
 
     def open_file_dialog(self, folder_id: int | None = None) -> dict[str, Any]:
@@ -60,6 +61,33 @@ class Bridge:
                 subprocess.Popen(["open", str(p)])
             else:
                 subprocess.Popen(["xdg-open", str(p)])
+            return {"success": True}
+        except Exception as exc:  # pragma: no cover - 平台相关异常
+            return {"success": False, "error": str(exc)}
+
+    def open_file_location(self, path: str) -> dict[str, Any]:
+        """在文件管理器中打开文件所在目录，尽量选中该文件。"""
+        if not path:
+            return {"success": False, "error": "empty_path"}
+
+        p = Path(path).expanduser()
+        if not p.exists():
+            return {"success": False, "error": "not_found"}
+
+        try:
+            if sys.platform.startswith("win"):
+                if p.is_file():
+                    subprocess.Popen(["explorer", "/select,", str(p)])
+                else:
+                    subprocess.Popen(["explorer", str(p)])
+            elif sys.platform == "darwin":
+                if p.is_file():
+                    subprocess.Popen(["open", "-R", str(p)])
+                else:
+                    subprocess.Popen(["open", str(p)])
+            else:
+                target = p if p.is_dir() else p.parent
+                subprocess.Popen(["xdg-open", str(target)])
             return {"success": True}
         except Exception as exc:  # pragma: no cover - 平台相关异常
             return {"success": False, "error": str(exc)}
