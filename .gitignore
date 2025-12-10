@@ -26,6 +26,9 @@ app/*.egg-info
 app/.venv/
 app/*.spec
 app/AGENTS.md
+app/*.db
+app/*.db-shm
+app/*.db-wal
 
 # Web-specific ignores
 web/node_modules/
