@@ -68,7 +68,7 @@ async def create_anchor(payload: AnchorCreate) -> AnchorResponse:
 
     bound_folder_ids = [all_folder.id, target_folder.id]
 
-    await log_operation("创建资料锚点", f"anchor_id={anchor.id}")
+    await log_operation("创建资料锚点", f"创建资料锚点「{anchor.name}」")
 
     return AnchorResponse(
         id=anchor.id,
@@ -111,7 +111,7 @@ async def move_anchor_to_recycle(anchor_id: int) -> AnchorResponse:
     await anchor.tags.clear()
     await anchor.refresh_from_db()
 
-    await log_operation("移入回收站", f"anchor_id={anchor.id}")
+    await log_operation("移入回收站", f"将锚点「{anchor.name}」移入回收站")
 
     return AnchorResponse(
         id=anchor.id,
@@ -154,7 +154,7 @@ async def restore_anchor(anchor_id: int) -> AnchorResponse:
     await anchor.virtual_folders.add(all_folder)
     await anchor.refresh_from_db()
 
-    await log_operation("恢复资料锚点", f"anchor_id={anchor.id}")
+    await log_operation("恢复资料锚点", f"从回收站恢复锚点「{anchor.name}」")
 
     return AnchorResponse(
         id=anchor.id,
@@ -212,8 +212,9 @@ async def bind_anchor_folders(anchor_id: int, payload: AnchorBindFolders) -> Anc
     await anchor.refresh_from_db()
     bound_folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
+    target_names = ", ".join(f.name for f in targets)
 
-    await log_operation("绑定锚点文件夹", f"anchor_id={anchor.id};folders={','.join(map(str, bound_folder_ids))}")
+    await log_operation("绑定锚点文件夹", f"为锚点「{anchor.name}」绑定文件夹：{target_names}")
 
     return AnchorResponse(
         id=anchor.id,
@@ -273,7 +274,7 @@ async def update_anchor(anchor_id: int, payload: AnchorUpdate) -> AnchorResponse
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
 
-    await log_operation("更新锚点信息", f"anchor_id={anchor.id}")
+    await log_operation("更新锚点信息", f"更新锚点信息「{anchor.name}」")
 
     return AnchorResponse(
         id=anchor.id,
@@ -297,6 +298,7 @@ async def rename_anchor(anchor_id: int, payload: AnchorRename) -> AnchorResponse
     if not anchor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="资料锚点不存在")
 
+    old_name = anchor.name
     anchor.name = payload.name
     await anchor.save()
     await anchor.refresh_from_db()
@@ -304,7 +306,10 @@ async def rename_anchor(anchor_id: int, payload: AnchorRename) -> AnchorResponse
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
 
-    await log_operation("更新锚点信息", f"anchor_id={anchor.id}")
+    await log_operation(
+        "更新锚点信息",
+        f"将锚点「{old_name}」重命名为「{anchor.name}」",
+    )
 
     return AnchorResponse(
         id=anchor.id,
@@ -335,7 +340,7 @@ async def update_anchor_description(anchor_id: int, payload: AnchorUpdateDescrip
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
 
-    await log_operation("更新锚点信息", f"anchor_id={anchor.id}")
+    await log_operation("更新锚点信息", f"更新锚点「{anchor.name}」的描述")
 
     return AnchorResponse(
         id=anchor.id,
@@ -390,7 +395,7 @@ async def add_tags_to_anchor(anchor_id: int, payload: AnchorAddTags) -> AnchorRe
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
 
-    await log_operation("添加锚点标签", f"anchor_id={anchor.id};tags={','.join(map(str, tag_ids))}")
+    await log_operation("添加锚点标签", f"为锚点「{anchor.name}」添加标签：{', '.join(names)}")
 
     return AnchorResponse(
         id=anchor.id,
@@ -432,7 +437,10 @@ async def remove_tag_from_anchor(anchor_id: int, tag_id: int) -> AnchorResponse:
     tag_ids = await anchor.tags.all().values_list("id", flat=True)
     folder_ids = await anchor.virtual_folders.all().values_list("id", flat=True)
 
-    await log_operation("移除锚点标签", f"anchor_id={anchor.id};tag_id={tag_id}")
+    await log_operation(
+        "移除锚点标签",
+        f"从锚点「{anchor.name}」移除标签：{tag.name}",
+    )
 
     return AnchorResponse(
         id=anchor.id,

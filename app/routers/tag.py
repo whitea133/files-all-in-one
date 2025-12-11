@@ -43,9 +43,8 @@ async def delete_tag(tag_id: int) -> None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="标签不存在")
 
     await tag.file_anchors.clear()
+    await log_operation("删除标签", f"删除标签「{tag.name}」")
     await tag.delete()
-
-    await log_operation("删除标签", f"tag_id={tag_id}")
 
 
 @router.get("/anchors", response_model=list[AnchorResponse])

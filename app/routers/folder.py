@@ -67,7 +67,7 @@ async def create_virtual_folder(payload: VirtualFolderCreate) -> VirtualFolderRe
         # 并发场景下的重复创建保护
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="虚拟文件夹已存在")
 
-    await log_operation("创建虚拟文件夹", f"folder_id={folder.id}")
+    await log_operation("创建虚拟文件夹", f"创建虚拟文件夹「{folder.name}」")
 
     return folder
 
@@ -84,6 +84,7 @@ async def rename_virtual_folder(folder_id: int, payload: VirtualFolderUpdate) ->
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="虚拟文件夹不存在")
     if folder.is_system:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="系统虚拟文件夹不可修改")
+    old_name = folder.name
 
     if await VirtualFolder.filter(name=payload.name).exclude(id=folder_id).exists():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="虚拟文件夹名称已存在")
@@ -95,7 +96,10 @@ async def rename_virtual_folder(folder_id: int, payload: VirtualFolderUpdate) ->
     except IntegrityError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="虚拟文件夹名称已存在")
 
-    await log_operation("重命名虚拟文件夹", f"folder_id={folder.id}")
+    await log_operation(
+        "重命名虚拟文件夹",
+        f"将虚拟文件夹「{old_name}」重命名为「{folder.name}」",
+    )
 
     return folder
 
@@ -112,7 +116,7 @@ async def delete_virtual_folder(folder_id: int) -> None:
     if folder.is_system:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="系统虚拟文件夹不可删除")
 
-    await log_operation("删除虚拟文件夹", f"folder_id={folder.id}")
+    await log_operation("删除虚拟文件夹", f"删除虚拟文件夹「{folder.name}」")
     await folder.delete()
 
 # -----------虚拟文件夹与资料锚点相关操作-----------
@@ -158,6 +162,7 @@ async def empty_recycle_bin() -> None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="回收站不存在")
 
     anchors = await FileAnchor.filter(virtual_folders__id=recycle_folder.id).distinct()
+    deleted_count = len(anchors)
     for anchor in anchors:
         tags = await anchor.tags.all()
         for tag in tags:
@@ -166,4 +171,4 @@ async def empty_recycle_bin() -> None:
                 await tag.save()
         await anchor.delete()
 
-    await log_operation("清空回收站", f"recycle_folder_id={recycle_folder.id}")
+    await log_operation("清空回收站", f"清空回收站，永久删除 {deleted_count} 个锚点")

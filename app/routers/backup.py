@@ -102,7 +102,10 @@ async def backup_anchor(anchor_id: int) -> BackupRecordResponse:
 
     rec = await BackupRecord.create(file_anchor=anchor, backup_path=str(dest_path))
 
-    await log_operation("创建备份", f"anchor_id={anchor.id};backup_id={rec.id}")
+    await log_operation(
+        "创建备份",
+        f"为锚点「{anchor.name}」创建备份文件「{dest_path.name}」",
+    )
     return BackupRecordResponse.from_model(rec)
 
 
@@ -132,8 +135,12 @@ async def restore_backup(backup_id: int) -> BackupRecordResponse:
 
     # 刷新记录以返回最新 anchor 信息
     await rec.fetch_related("file_anchor")
+    anchor = rec.file_anchor
 
-    await log_operation("恢复备份", f"backup_id={backup_id};anchor_id={anchor.id}")
+    await log_operation(
+        "恢复备份",
+        f"从备份文件「{backup_path.name}」恢复锚点「{anchor.name}」",
+    )
     return BackupRecordResponse.from_model(rec)
 
 
@@ -151,6 +158,8 @@ async def delete_backup(backup_id: int) -> None:
         # 如果文件删除失败，不影响记录删除，避免阻塞
         pass
 
+    await log_operation(
+        "删除备份",
+        f"删除备份文件「{backup_path.name}」",
+    )
     await rec.delete()
-
-    await log_operation("删除备份", f"backup_id={backup_id}")
