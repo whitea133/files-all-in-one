@@ -41,6 +41,10 @@ class BackupPathUpdate(BaseModel):
     backup_path: str = Field(..., min_length=1, max_length=1024)
 
 
+class StartupSettingResponse(BaseModel):
+    open_last_folder: bool = False
+
+
 @router.get("/backup/path", response_model=BackupPathResponse)
 def get_backup_path() -> BackupPathResponse:
     data = _load_settings()
@@ -72,3 +76,22 @@ def select_backup_path() -> BackupPathResponse:
     data["backup_path"] = chosen
     _save_settings(data)
     return BackupPathResponse(backup_path=chosen)
+
+
+# 基础设置：启动时打开上一次的虚拟文件夹
+@router.get("/startup/open-last-folder", response_model=StartupSettingResponse)
+def get_startup_open_last_folder() -> StartupSettingResponse:
+    data = _load_settings()
+    return StartupSettingResponse(open_last_folder=bool(data.get("open_last_folder", False)))
+
+
+class StartupSettingUpdate(BaseModel):
+    open_last_folder: bool = Field(..., description="是否启动时打开上一次的虚拟文件夹")
+
+
+@router.post("/startup/open-last-folder", response_model=StartupSettingResponse)
+def update_startup_open_last_folder(payload: StartupSettingUpdate) -> StartupSettingResponse:
+    data = _load_settings()
+    data["open_last_folder"] = payload.open_last_folder
+    _save_settings(data)
+    return StartupSettingResponse(open_last_folder=payload.open_last_folder)
