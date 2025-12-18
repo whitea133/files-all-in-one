@@ -479,9 +479,15 @@ async function handleFolderRenameCommit(payload: { id: string; name: string }) {
     editingFolderId.value = null
     return
   }
-  await api.patch(`/folders/${payload.id}`, { name: targetName })
-  editingFolderId.value = null
-  await loadFolders()
+  try {
+    await api.patch(`/folders/${payload.id}`, { name: targetName })
+    await loadFolders()
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    window.alert(detail || '重命名失败，可能是系统文件夹不允许修改')
+  } finally {
+    editingFolderId.value = null
+  }
 }
 
 function handleFolderRenameCancel() {
@@ -489,6 +495,12 @@ function handleFolderRenameCancel() {
 }
 
 function handleRenameFolder(folderId: string) {
+  const folder = folders.value.find((f) => f.id === folderId)
+  if (!folder) return
+  if ((folder as any).isSystem || folder.name === '回收站' || folder.name === '全部资料') {
+    window.alert('系统虚拟文件夹不可重命名')
+    return
+  }
   editingFolderId.value = folderId
   nextTick(() => {
     const input = document.querySelector('.folder-rename-input') as HTMLInputElement | null
