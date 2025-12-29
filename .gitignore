@@ -3,6 +3,7 @@
 
 # root files
 /snapshots/
+/*.docx
 
 # Python-generated files
 __pycache__/
