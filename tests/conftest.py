@@ -20,11 +20,16 @@ if str(ROOT) not in sys.path:
 
 import models  # noqa: E402
 from routers import folder as folder_router  # noqa: E402
+from routers import anchor as anchor_router  # noqa: E402
+from routers import tag as tag_router  # noqa: E402
+from routers import backup as backup_router  # noqa: E402
+from routers import useSetting as setting_router  # noqa: E402
+from routers import log as log_router  # noqa: E402
 
 
 SYSTEM_FOLDERS = [
-    {"name": "全部资料", "description": "系统默认", "is_system": True},
-    {"name": "回收站", "description": "系统默认", "is_system": True},
+    {"name": anchor_router.ALL_FOLDER_NAME, "description": "系统默认", "is_system": True},
+    {"name": anchor_router.RECYCLE_FOLDER_NAME, "description": "系统默认", "is_system": True},
 ]
 
 
@@ -40,6 +45,11 @@ async def client():
 
     app = FastAPI()
     app.include_router(folder_router.router)
+    app.include_router(anchor_router.router)
+    app.include_router(tag_router.router)
+    app.include_router(backup_router.router)
+    app.include_router(setting_router.router)
+    app.include_router(log_router.router)
 
     async with httpx.AsyncClient(
         transport=ASGITransport(app=app),
