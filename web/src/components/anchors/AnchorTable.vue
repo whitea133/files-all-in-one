@@ -178,7 +178,7 @@ const iconTint = (anchor: AnchorItem) => {
                 :value="anchor.title"
                 autofocus
                 @keydown.enter.stop.prevent="emit('rename-commit', { id: anchor.id, title: ($event.target as HTMLInputElement).value })"
-                @blur="emit('rename-cancel')"
+                @blur="emit('rename-commit', { id: anchor.id, title: ($event.target as HTMLInputElement).value })"
                 @keydown.esc.stop.prevent="emit('rename-cancel')"
               />
             </td>
